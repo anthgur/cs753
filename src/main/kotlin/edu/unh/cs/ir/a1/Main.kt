@@ -5,7 +5,8 @@ fun main(args: Array<String>) {
 
     try {
         println("rebuildIndexes")
+        val indexer = Indexer()
 
-    }
+    } catch (ignored: Exception) {}
 }
 
