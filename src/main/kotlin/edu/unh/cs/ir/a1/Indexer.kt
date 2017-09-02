@@ -23,6 +23,10 @@ class Indexer
         doc.add(StringField(IndexerFields.CONTENT.toString().toLowerCase(), paragraph.textOnly, Field.Store.NO))
         indexWriter.addDocument(doc)
     }
+
+    fun closeIndex() {
+        indexWriter.close()
+    }
 }
 
 enum class IndexerFields {

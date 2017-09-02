@@ -1,9 +1,7 @@
 package edu.unh.cs.ir.a1
 
-import com.sun.xml.internal.bind.api.impl.NameConverter
 import edu.unh.cs.treccar.read_data.DeserializeData
 import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.store.RAMDirectory
 import org.apache.lucene.util.QueryBuilder
 import java.io.FileInputStream
 
@@ -20,6 +18,9 @@ fun main(args: Array<String>) {
         indexer.indexParagraph(paragraph)
     }
 
+    // Close after we load the entries
+    indexer.closeIndex()
+
     // Create the analyzer for the search engine
     val analyzer = StandardAnalyzer()
     val directory = indexer.indexDir
@@ -28,8 +29,11 @@ fun main(args: Array<String>) {
     // Make the query build tool
     val parser = QueryBuilder(analyzer)
     searchEngine.performQuery(parser.
-            createBooleanQuery(IndexerFields.CONTENT.toString().toLowerCase(),"power nap benefits"))
+            createBooleanQuery(
+                    IndexerFields.CONTENT.toString().toLowerCase(),"power nap benefits"), 10)
 
 
+
+    searchEngine.closeSearchEngine()
 }
 
