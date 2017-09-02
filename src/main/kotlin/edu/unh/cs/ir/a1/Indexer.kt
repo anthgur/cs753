@@ -7,12 +7,11 @@ import org.apache.lucene.document.Field
 import org.apache.lucene.document.StringField
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
-import org.apache.lucene.store.FSDirectory
-import java.nio.file.Paths
+import org.apache.lucene.store.RAMDirectory
 
 class Indexer
 {
-    private val indexDir = FSDirectory.open(Paths.get("index-directory"))
+    val indexDir = RAMDirectory()
     private val config = IndexWriterConfig(StandardAnalyzer())
     private val indexWriter = IndexWriter(indexDir, config)
 
@@ -20,8 +19,12 @@ class Indexer
     {
         // Create the document for the paragraph object
         val doc = Document()
-        doc.add(StringField("id", paragraph.paraId, Field.Store.YES))
-        doc.add(StringField("content", paragraph.textOnly, Field.Store.NO))
+        doc.add(StringField(IndexerFields.ID.toString().toLowerCase(), paragraph.paraId, Field.Store.YES))
+        doc.add(StringField(IndexerFields.CONTENT.toString().toLowerCase(), paragraph.textOnly, Field.Store.NO))
         indexWriter.addDocument(doc)
     }
+}
+
+enum class IndexerFields {
+    ID, CONTENT
 }
