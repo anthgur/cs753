@@ -12,13 +12,11 @@ class SearchEngine(directory: RAMDirectory){
     private val indexSearcher = IndexSearcher(directoryReader)
 
     fun performQuery(query: Query, numResults: Int) {
-        println("Searching $query")
-        val scoreDocs = indexSearcher.search(query,numResults).scoreDocs.forEach {
+        indexSearcher.search(query,numResults).scoreDocs.forEach {
             val doc = indexSearcher.doc(it.doc)
-            println("Hit! paragraph ID: ${doc.get(IndexerFields.ID.toString().toLowerCase())}")
+            println("paragraph ID: ${doc.get(IndexerFields.ID.toString().toLowerCase())}")
             println("content: ${doc.get(IndexerFields.CONTENT.toString().toLowerCase())}")
         }
-        println(scoreDocs)
     }
 
     fun closeSearchEngine() {

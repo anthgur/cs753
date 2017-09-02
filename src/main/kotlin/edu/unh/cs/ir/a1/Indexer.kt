@@ -5,9 +5,11 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.StringField
+import org.apache.lucene.document.TextField
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.store.RAMDirectory
+import javax.xml.soap.Text
 
 class Indexer
 {
@@ -20,7 +22,7 @@ class Indexer
         // Create the document for the paragraph object
         val doc = Document()
         doc.add(StringField(IndexerFields.ID.toString().toLowerCase(), paragraph.paraId, Field.Store.YES))
-        doc.add(StringField(IndexerFields.CONTENT.toString().toLowerCase(), paragraph.textOnly, Field.Store.NO))
+        doc.add(TextField(IndexerFields.CONTENT.toString().toLowerCase(), paragraph.textOnly, Field.Store.YES))
         indexWriter.addDocument(doc)
     }
 
