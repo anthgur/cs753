@@ -7,10 +7,6 @@ import org.apache.lucene.document.Field
 import org.apache.lucene.document.StringField
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
-import org.apache.lucene.index.IndexableField
-import org.apache.lucene.store.FSDirectory
-import java.io.IOException
-import java.nio.file.FileSystems
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 
@@ -23,7 +19,7 @@ class Indexer
     fun indexParagraph(paragraph: Data.Paragraph)
     {
         // Create the document for the paragraph object
-        var doc = Document()
+        val doc = Document()
         doc.add(StringField("id", paragraph.paraId, Field.Store.YES))
         doc.add(StringField("content", paragraph.textOnly, Field.Store.NO))
         indexWriter.addDocument(doc)
