@@ -1,0 +1,3 @@
+[submodule "trec-car-tools"]
+	path = trec-car-tools
+	url = https://github.com/TREMA-UNH/trec-car-tools.git
