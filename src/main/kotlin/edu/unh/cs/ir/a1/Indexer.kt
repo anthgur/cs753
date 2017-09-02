@@ -1,5 +1,6 @@
 package edu.unh.cs.ir.a1
 
+import edu.unh.cs.treccar.Data
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
@@ -10,33 +11,21 @@ import org.apache.lucene.index.IndexableField
 import org.apache.lucene.store.FSDirectory
 import java.io.IOException
 import java.nio.file.FileSystems
+import org.apache.lucene.store.FSDirectory
+import java.nio.file.Paths
 
-class Indexer() {
-
-    private val path = FileSystems.getDefault().getPath("index-directory")
-    private val indexDir = FSDirectory.open(path)!!
+class Indexer
+{
+    private val indexDir = FSDirectory.open(Paths.get("index-directory"))
     private val config = IndexWriterConfig(StandardAnalyzer())
-
     private val indexWriter = IndexWriter(indexDir, config)
 
-    fun getIndexWriter(){
-        indexWriter
-    }
-
-    fun closeIndexWriter() {
-        indexWriter.close()
-    }
-
-    fun indexEntry(entry: Any?) {
-        println("adding $entry to index!")
-        val doc = Document()
-        doc.add(StringField("id", "1", Field.Store.YES))
+    fun indexParagraph(paragraph: Data.Paragraph)
+    {
+        // Create the document for the paragraph object
+        var doc = Document()
+        doc.add(StringField("id", paragraph.paraId, Field.Store.YES))
+        doc.add(StringField("content", paragraph.textOnly, Field.Store.NO))
         indexWriter.addDocument(doc)
     }
-
-    fun rebuildIndexes() {
-        closeIndexWriter()
-    }
-
-
 }

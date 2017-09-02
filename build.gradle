@@ -48,6 +48,8 @@ repositories {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
     compile "org.apache.lucene:lucene-core:6.6.0"
+    compile "co.nstant.in:cbor:0.7"
+    compile "org.apache.commons:commons-lang3:3.3"
 }
 
 compileKotlin {
