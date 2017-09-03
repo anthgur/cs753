@@ -11,6 +11,10 @@ fun main(args: Array<String>) {
     // Create an indexer
     val indexer = Indexer()
 
+    val frequencySimilarity = BaseSimilarity() {
+
+    }
+
     // Get paragraphs from the CBOR file
     val stream = FileInputStream(System.getProperty("user.dir") +
             "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
@@ -27,6 +31,7 @@ fun main(args: Array<String>) {
     // Make the query build tool
     val parser = QueryBuilder(analyzer)
 
+    // Perform each query in the list and display top 10
     val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
     queries.forEach{
         println("\"$it\" search results")
