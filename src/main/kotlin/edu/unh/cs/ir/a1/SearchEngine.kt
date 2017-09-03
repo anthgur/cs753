@@ -6,6 +6,7 @@ import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.TopDocs
+import org.apache.lucene.search.similarities.SimilarityBase
 import org.apache.lucene.store.FSDirectory
 import java.nio.file.Paths
 
@@ -18,6 +19,16 @@ class SearchEngine()
     {
         val query = queryParser.parse(queryString)
         return indexSearcher.search(query, n)
+    }
+
+    fun performSearchWithCustomScoring(queryString: String, n: Int): TopDocs
+    {
+        // Make a new indexsearcher because we're gonna mess around with its scoring system
+        val searcher = IndexSearcher(DirectoryReader.open(FSDirectory.open(Paths.get("index-directory"))))
+        val sim = CustomScore()
+        searcher.setSimilarity(sim)
+        val query = queryParser.parse(queryString)
+        return searcher.search(query, n)
     }
 
     fun getDocument(id: Int): Document

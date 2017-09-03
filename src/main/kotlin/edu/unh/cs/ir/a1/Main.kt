@@ -27,6 +27,7 @@ fun main(args: Array<String>) {
 
     println("\nQuery 1: power nap benefits")
 
+    // perform query 1 and print results
     var results = se.performSearch("power nap benefits", 10)
     println("Query 1 Results:")
     for (res in results.scoreDocs)
@@ -37,8 +38,8 @@ fun main(args: Array<String>) {
 
     println("\nQuery 2: whale vocalization production of sound")
 
+    // perform query 2 and get results
     results = se.performSearch("whale vocalization production of sound", 10)
-
     println("Query 2 Results:")
     for (res in results.scoreDocs)
     {
@@ -48,8 +49,42 @@ fun main(args: Array<String>) {
 
     println("\nQuery 3: pokemon puzzle league")
 
+    // perform query 3 and get results
     results = se.performSearch("pokemon puzzle league", 10)
+    println("Query 3 Results:")
+    for (res in results.scoreDocs)
+    {
+        val doc = se.getDocument(res.doc)
+        println("Document " + res.doc + " content: " + doc.getField("content").stringValue())
+    }
 
+    // The second portion for grad students, implementing scoring function from class
+    println("\nQuery 1: power nap benefits")
+
+    // perform query 1 and print results
+    results = se.performSearchWithCustomScoring("power nap benefits", 10)
+    println("Query 1 Results:")
+    for (res in results.scoreDocs)
+    {
+        val doc = se.getDocument(res.doc)
+        println("Document " + res.doc + " content: " + doc.getField("content").stringValue())
+    }
+
+    println("\nQuery 2: whale vocalization production of sound")
+
+    // perform query 2 and get results
+    results = se.performSearchWithCustomScoring("whale vocalization production of sound", 10)
+    println("Query 2 Results:")
+    for (res in results.scoreDocs)
+    {
+        val doc = se.getDocument(res.doc)
+        println("Document " + res.doc + " content: " + doc.getField("content").stringValue())
+    }
+
+    println("\nQuery 3: pokemon puzzle league")
+
+    // perform query 3 and get results
+    results = se.performSearchWithCustomScoring("pokemon puzzle league", 10)
     println("Query 3 Results:")
     for (res in results.scoreDocs)
     {
