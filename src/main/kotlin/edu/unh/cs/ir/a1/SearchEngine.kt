@@ -14,8 +14,8 @@ class SearchEngine(directory: RAMDirectory){
     fun performQuery(query: Query, numResults: Int) {
         indexSearcher.search(query,numResults).scoreDocs.forEach {
             val doc = indexSearcher.doc(it.doc)
-            println("paragraph ID: ${doc.get(IndexerFields.ID.toString().toLowerCase())}")
-            println("content: ${doc.get(IndexerFields.CONTENT.toString().toLowerCase())}")
+            print("paragraph ID: ${doc.get(IndexerFields.ID.toString().toLowerCase())}")
+            println(" - content: ${doc.get(IndexerFields.CONTENT.toString().toLowerCase())}")
         }
     }
 

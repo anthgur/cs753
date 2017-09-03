@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
     // Get paragraphs from the CBOR file
     val stream = FileInputStream(System.getProperty("user.dir") +
             "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
-    DeserializeData.iterableParagraphs(stream).forEach{ paragraph ->
+    DeserializeData.iterableParagraphs(stream).forEach { paragraph ->
         indexer.indexParagraph(paragraph)
     }
 
@@ -28,12 +28,17 @@ fun main(args: Array<String>) {
 
     // Make the query build tool
     val parser = QueryBuilder(analyzer)
-    searchEngine.performQuery(parser.
-            createBooleanQuery(
-                    IndexerFields.CONTENT.toString().toLowerCase(),"power nap benefits"), 10)
 
-
-
+    val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
+    queries.forEach{
+        println("\"$it\" search results")
+        performQuery(searchEngine, parser, it, 10)
+    }
     searchEngine.closeSearchEngine()
+}
+
+fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int) {
+   searchEngine.performQuery(parser.createBooleanQuery(
+           IndexerFields.CONTENT.toString().toLowerCase(), query), numResults)
 }
 
