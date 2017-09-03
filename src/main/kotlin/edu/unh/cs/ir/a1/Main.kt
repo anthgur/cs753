@@ -2,6 +2,9 @@ package edu.unh.cs.ir.a1
 
 import edu.unh.cs.treccar.read_data.DeserializeData
 import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.queryparser.classic.QueryParser
+import org.apache.lucene.search.similarities.BasicStats
+import org.apache.lucene.search.similarities.SimilarityBase
 import org.apache.lucene.util.QueryBuilder
 import java.io.FileInputStream
 
@@ -11,8 +14,13 @@ fun main(args: Array<String>) {
     // Create an indexer
     val indexer = Indexer()
 
-    val frequencySimilarity = BaseSimilarity() {
-
+    class freqSimilarity() : SimilarityBase() {
+        override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+            TODO("implement")
+        }
+        override fun toString(): String {
+            return "Frequency Similarity based on sum #{q_i}"
+        }
     }
 
     // Get paragraphs from the CBOR file
@@ -29,7 +37,7 @@ fun main(args: Array<String>) {
     val searchEngine = SearchEngine(directory)
 
     // Make the query build tool
-    val parser = QueryBuilder(analyzer)
+    val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
 
     // Perform each query in the list and display top 10
     val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
