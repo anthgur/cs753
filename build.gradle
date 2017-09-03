@@ -2,6 +2,7 @@ group 'team7'
 version '1.0-SNAPSHOT'
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'idea'
 
 buildscript {
     ext.kotlin_version = '1.1.4-3'

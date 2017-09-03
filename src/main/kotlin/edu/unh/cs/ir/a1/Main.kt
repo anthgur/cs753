@@ -11,17 +11,19 @@ import java.io.FileInputStream
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a1 main running...")
 
-    // Create an indexer
-    val indexer = Indexer()
-
     class freqSimilarity() : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
-            TODO("implement")
+            return stats!!.totalTermFreq.toFloat()
         }
+
         override fun toString(): String {
             return "Frequency Similarity based on sum #{q_i}"
         }
     }
+    // Create an indexer
+    val indexer = Indexer()
+
+    // Create
 
     // Get paragraphs from the CBOR file
     val stream = FileInputStream(System.getProperty("user.dir") +
@@ -41,7 +43,7 @@ fun main(args: Array<String>) {
 
     // Perform each query in the list and display top 10
     val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
-    queries.forEach{
+    queries.forEach {
         println("\"$it\" search results")
         performQuery(searchEngine, parser, it, 10)
     }
@@ -49,7 +51,7 @@ fun main(args: Array<String>) {
 }
 
 fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int) {
-   searchEngine.performQuery(parser.createBooleanQuery(
-           IndexerFields.CONTENT.toString().toLowerCase(), query), numResults)
+    searchEngine.performQuery(parser.createBooleanQuery(
+            IndexerFields.CONTENT.toString().toLowerCase(), query), numResults)
 }
 
