@@ -14,6 +14,6 @@ class CustomScore : SimilarityBase
 
     override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float
     {
-        return freq
+        return stats!!.totalTermFreq.toFloat()
     }
 }

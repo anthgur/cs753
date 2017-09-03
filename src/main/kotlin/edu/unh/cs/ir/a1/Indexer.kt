@@ -8,12 +8,11 @@ import org.apache.lucene.document.StringField
 import org.apache.lucene.document.TextField
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
-import org.apache.lucene.store.FSDirectory
-import java.nio.file.Paths
+import org.apache.lucene.store.RAMDirectory
 
 class Indexer()
 {
-    private val indexDir = FSDirectory.open(Paths.get("index-directory"))
+    val indexDir = RAMDirectory()
     private val config = IndexWriterConfig(StandardAnalyzer())
     private val indexWriter = IndexWriter(indexDir, config)
 

@@ -23,7 +23,8 @@ fun main(args: Array<String>) {
     indexer.closeIndexer()
 
     // Create search engine
-    val se = SearchEngine()
+    val dir = indexer.indexDir
+    val se = SearchEngine(dir)
 
     println("\nQuery 1: power nap benefits")
 
