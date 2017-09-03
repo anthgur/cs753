@@ -11,7 +11,7 @@ import java.io.FileInputStream
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a1 main running...")
 
-    class freqSimilarity() : SimilarityBase() {
+    class freqSimilarity : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
             return stats!!.totalTermFreq.toFloat()
         }
@@ -20,23 +20,41 @@ fun main(args: Array<String>) {
             return "Frequency Similarity based on sum #{q_i}"
         }
     }
+
+    // Instance of the term frequency similarity
+    val termFrequencySimilarity = freqSimilarity()
+
     // Create an indexer
     val indexer = Indexer()
 
-    // Create
+    // Create term frequency indexer
+    val termFrequencyIndexer = Indexer(termFrequencySimilarity)
+
 
     // Get paragraphs from the CBOR file
     val stream = FileInputStream(System.getProperty("user.dir") +
             "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
-    DeserializeData.iterableParagraphs(stream).forEach(indexer::indexParagraph)
+
+    // Add the paragraphs to the index
+    DeserializeData.iterableParagraphs(stream).forEach{
+        indexer.indexParagraph(it)
+        termFrequencyIndexer.indexParagraph(it)
+    }
 
     // Close after we load the entries
     indexer.closeIndex()
+    termFrequencyIndexer.closeIndex()
 
     // Create the analyzer for the search engine
     val analyzer = StandardAnalyzer()
+
+    // Create the search engine
     val directory = indexer.indexDir
     val searchEngine = SearchEngine(directory)
+
+    // Create the term frequency search engine
+    val termFrequencyDirectory = termFrequencyIndexer.indexDir
+    val termFrequencySearchEngine = SearchEngine(termFrequencyDirectory, termFrequencySimilarity)
 
     // Make the query build tool
     val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
@@ -46,8 +64,14 @@ fun main(args: Array<String>) {
     queries.forEach {
         println("\"$it\" search results")
         performQuery(searchEngine, parser, it, 10)
+        println()
+        println("\"$it\" term frequency search results")
+        performQuery(termFrequencySearchEngine, parser, it, 10)
+        println()
     }
+
     searchEngine.closeSearchEngine()
+    termFrequencySearchEngine.closeSearchEngine()
 }
 
 fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int) {

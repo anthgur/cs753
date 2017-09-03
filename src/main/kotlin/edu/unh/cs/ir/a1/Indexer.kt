@@ -17,9 +17,7 @@ class Indexer(similarity: SimilarityBase? = null) {
     private val indexWriter = IndexWriter(indexDir, config)
 
     init {
-        if (similarity != null) {
-            config.similarity = similarity
-        }
+        if (similarity != null) config.similarity = similarity
     }
 
     fun indexParagraph(paragraph: Data.Paragraph) {
