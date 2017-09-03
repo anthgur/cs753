@@ -9,7 +9,6 @@ import org.apache.lucene.document.TextField
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.store.RAMDirectory
-import javax.xml.soap.Text
 
 class Indexer
 {

@@ -14,9 +14,7 @@ fun main(args: Array<String>) {
     // Get paragraphs from the CBOR file
     val stream = FileInputStream(System.getProperty("user.dir") +
             "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
-    DeserializeData.iterableParagraphs(stream).forEach { paragraph ->
-        indexer.indexParagraph(paragraph)
-    }
+    DeserializeData.iterableParagraphs(stream).forEach(indexer::indexParagraph)
 
     // Close after we load the entries
     indexer.closeIndex()
