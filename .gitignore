@@ -1,5 +1,7 @@
 /index-directory
 
+/src/resources
+
 *.log
 classes
 
