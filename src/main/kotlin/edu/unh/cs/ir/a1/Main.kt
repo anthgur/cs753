@@ -38,7 +38,7 @@ fun main(args: Array<String>) {
 
 
     // Get paragraphs from the CBOR file
-    val stream = FileInputStream(args[0])
+    val stream = FileInputStream(System.getProperty("user.dir") + args[0])
 //    val stream = FileInputStream(System.getProperty("user.dir") +
 //            "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
 
