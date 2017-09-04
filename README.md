@@ -14,7 +14,7 @@ Lucene Index for TREC Complex Answer Retreival
 
 The default main class for this assingment is ```edu.unh.cs.ir.a1.MainKt```
 
-Run this assignment with ```./gradlew run -Parg1="relative/path/to/data/file/from/current/directory"```
+Run this assignment with ```./gradlew run -Parg1="/relative/path/to/data/file/from/current/directory"```
 
 For example, if you're in the directory that contains your `resources` folder with your data then run: ```./gradlew run -Parg1="/resources/data/test200/train.test200.cbor.paragraphs"```
 
