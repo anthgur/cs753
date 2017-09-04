@@ -10,6 +10,8 @@ import java.io.FileInputStream
 
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a1 main running...")
+    println("expecting first argument to be paragraph data file...")
+    println("using ${args[0]}")
 
     class freqSimilarity : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
@@ -32,8 +34,9 @@ fun main(args: Array<String>) {
 
 
     // Get paragraphs from the CBOR file
-    val stream = FileInputStream(System.getProperty("user.dir") +
-            "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
+    val stream = FileInputStream(args[0])
+//    val stream = FileInputStream(System.getProperty("user.dir") +
+//            "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
 
     // Add the paragraphs to the index
     DeserializeData.iterableParagraphs(stream).forEach{
