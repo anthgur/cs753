@@ -10,8 +10,12 @@ import java.io.FileInputStream
 
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a1 main running...")
-    println("expecting first argument to be paragraph data file...")
-    println("using ${args[0]}")
+    println("expecting first argument to be paragraph data file path...")
+
+    try { println("using ${args[0]}")} catch(e: Exception) {
+        System.err.println("Did not give data file path...")
+        System.exit(-1)
+    }
 
     class freqSimilarity : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
