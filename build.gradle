@@ -46,7 +46,7 @@ task fatJar(type: Jar) {
 
 jar {
     manifest {
-        attributes "Main-Class": t "$mainClassName"
+        attributes "Main-Class":  "$mainClassName"
     }
 
     from {
