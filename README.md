@@ -12,7 +12,7 @@ Afterwards you run the project with ```./gradlew run```, please read below to if
 
 Lucene Index for TREC Complex Answer Retreival
 
-The default main class for this assingment is ```edu.unh.cs.ir.a1.Mainkt```
+The default main class for this assingment is ```edu.unh.cs.ir.a1.MainKt```
 
 Run this assignment with ```./gradlew run -Parg1="absolute/path/to/data/file"```
 
