@@ -12,4 +12,10 @@ Afterwards you run the project with ```./gradlew run```, please read below to if
 
 Lucene Index for TREC Complex Answer Retreival
 
-Run this assignment with ```./gradlew run -Parg1="path\to\data\file"```
+The default main class for this assingment is ```edu.unh.cs.ir.a1.Mainkt```
+
+Run this assignment with ```./gradlew run -Parg1="absolute/path/to/data/file"```
+
+For example: ```./gradlew run -Parg1="/home/user/resources/data/test200/train.test200.cbor.paragraphs"```
+
+# a2
