@@ -1,6 +1,6 @@
 /index-directory
 
-/src/resources
+/src/main/resources
 
 *.log
 classes
