@@ -28,11 +28,19 @@ class Indexer(similarity: SimilarityBase? = null) {
         indexWriter.addDocument(doc)
     }
 
+    fun indexPage(page: Data.Page) {
+        val doc = Document()
+        doc.add(StringField(IndexerFields.ID.toString().toLowerCase(), page.pageId, Field.Store.YES))
+        doc.add(StringField(IndexerFields.PAGE_NAME.toString().toLowerCase(), page.pageName, Field.Store.YES))
+        indexWriter.addDocument(doc)
+
+    }
+
     fun closeIndex() {
         indexWriter.close()
     }
 }
 
 enum class IndexerFields {
-    ID, CONTENT
+    ID, CONTENT, PAGE_NAME
 }

@@ -12,7 +12,7 @@ fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a1 main running...")
     println("expecting first argument to be paragraph data file path...")
 
-    try { println("using ${args[0]}")} catch(e: Exception) {
+    try { println("using Paragraphs: ${args[0]} Pages: ${args[1]}")} catch(e: Exception) {
         System.err.println("Did not give data file path...")
         System.exit(-1)
     }
@@ -38,12 +38,13 @@ fun main(args: Array<String>) {
 
 
     // Get paragraphs from the CBOR file
-    val stream = FileInputStream(System.getProperty("user.dir") + args[0])
+    val paragraphStream = FileInputStream(System.getProperty("user.dir") + args[0])
+    val pageStream = FileInputStream(System.getProperty("user.dir") + args[1])
 //    val stream = FileInputStream(System.getProperty("user.dir") +
 //            "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
 
     // Add the paragraphs to the index
-    DeserializeData.iterableParagraphs(stream).forEach{
+    DeserializeData.iterableParagraphs(paragraphStream).forEach{
         indexer.indexParagraph(it)
         termFrequencyIndexer.indexParagraph(it)
     }
@@ -67,15 +68,26 @@ fun main(args: Array<String>) {
     val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
 
     // Perform each query in the list and display top 10
-    val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
-    queries.forEach {
-        println("\"$it\" search results")
-        performQuery(searchEngine, parser, it, 10)
+//    val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
+//    queries.forEach {
+//        println("\"$it\" search results")
+//        performQuery(searchEngine, parser, it, 10)
+//        println()
+//        println("\"$it\" term frequency search results")
+//        performQuery(termFrequencySearchEngine, parser, it, 10)
+//        println()
+//    }
+
+    // Use the pages as the query
+    var query = 0
+    DeserializeData.iterableAnnotations(pageStream).forEach { page ->
+        print("${page.pageId} Q$query")
+        performQuery(searchEngine, parser, page.pageName, 100)
         println()
-        println("\"$it\" term frequency search results")
-        performQuery(termFrequencySearchEngine, parser, it, 10)
-        println()
+        query ++
+
     }
+
 
     searchEngine.closeSearchEngine()
     termFrequencySearchEngine.closeSearchEngine()
