@@ -1,4 +1,4 @@
-package edu.unh.cs.ir.a1
+package edu.unh.cs.ir.tools
 
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.search.IndexSearcher
