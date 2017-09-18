@@ -5,6 +5,7 @@ import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.similarities.SimilarityBase
 import org.apache.lucene.store.RAMDirectory
+import java.io.FileWriter
 
 class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) {
     private val curDirectory = directory
@@ -24,12 +25,10 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
         }
     }
 
-    fun performPageQuery(query: Query, numResults: Int, metaData: List<String>) {
-        var rank = 1
-        indexSearcher.search(query, numResults).scoreDocs.forEach {
+    fun performPageQuery(query: Query, numResults: Int, metaData: List<String>, resultsFile: FileWriter) {
+        indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
             indexSearcher.doc(it.doc)
-            println("${metaData[1]} QO ${it.doc} $rank ${it.score} ${metaData[2]}")
-            rank ++
+            resultsFile.write("${metaData[1]}\tQ0\t${it.doc}\t$rank\t${it.score}\t${metaData[2]}\n")
         }
     }
 
