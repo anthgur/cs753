@@ -28,7 +28,7 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
         var rank = 1
         indexSearcher.search(query, numResults).scoreDocs.forEach {
             indexSearcher.doc(it.doc)
-            println("${metaData[0]} ${metaData[1]} ${it.doc} $rank ${it.score} ${metaData[2]}")
+            println("${metaData[1]} QO ${it.doc} $rank ${it.score} ${metaData[2]}")
             rank ++
         }
     }

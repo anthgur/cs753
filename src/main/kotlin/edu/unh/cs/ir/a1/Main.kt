@@ -79,17 +79,17 @@ fun main(args: Array<String>) {
 //    }
 
     // Use the pages as the query
-    var query = 0
-    DeserializeData.iterableAnnotations(pageStream).forEach { page ->
+    DeserializeData.iterableAnnotations(pageStream).forEachIndexed { query, page ->
         performQuery(searchEngine, parser, page.pageName, 100,
-                listOf(page.pageId.toString(), query.toString(), "team7-lucene-default"))
-        query ++
-
+                listOf(page.pageId.toString(), query.toString(), "team7-luceneDefault"))
+        performQuery(termFrequencySearchEngine, parser, page.pageName, 100,
+                listOf(page.pageId.toString(), query.toString(), "team7-termFrequency"))
     }
-
 
     searchEngine.closeSearchEngine()
     termFrequencySearchEngine.closeSearchEngine()
+
+    TODO("Write the query outputs to a file.")
 }
 
 fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int, metaData: List<String>) {
