@@ -38,8 +38,8 @@ fun main(args: Array<String>) {
 
 
     // Get paragraphs from the CBOR file
-    val paragraphStream = FileInputStream(System.getProperty("user.dir") + args[0])
-    val pageStream = FileInputStream(System.getProperty("user.dir") + args[1])
+    val paragraphStream = FileInputStream(args[0])
+    val pageStream = FileInputStream( args[1])
 //    val stream = FileInputStream(System.getProperty("user.dir") +
 //            "/src/main/resources/input/test200/train.test200.cbor.paragraphs")
 
@@ -81,9 +81,8 @@ fun main(args: Array<String>) {
     // Use the pages as the query
     var query = 0
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
-        print("${page.pageId} Q$query")
-        performQuery(searchEngine, parser, page.pageName, 100)
-        println()
+        performQuery(searchEngine, parser, page.pageName, 100,
+                listOf(page.pageId.toString(), query.toString(), "team7-lucene-default"))
         query ++
 
     }
@@ -93,8 +92,8 @@ fun main(args: Array<String>) {
     termFrequencySearchEngine.closeSearchEngine()
 }
 
-fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int) {
-    searchEngine.performQuery(parser.createBooleanQuery(
-            IndexerFields.CONTENT.toString().toLowerCase(), query), numResults)
+fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int, metaData: List<String>) {
+    searchEngine.performPageQuery(parser.createBooleanQuery(
+            IndexerFields.CONTENT.toString().toLowerCase(), query), numResults, metaData)
 }
 

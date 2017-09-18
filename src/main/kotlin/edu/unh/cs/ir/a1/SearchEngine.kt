@@ -24,6 +24,15 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
         }
     }
 
+    fun performPageQuery(query: Query, numResults: Int, metaData: List<String>) {
+        var rank = 1
+        indexSearcher.search(query, numResults).scoreDocs.forEach {
+            indexSearcher.doc(it.doc)
+            println("${metaData[0]} ${metaData[1]} ${it.doc} $rank ${it.score} ${metaData[2]}")
+            rank ++
+        }
+    }
+
     fun closeSearchEngine() {
         directoryReader.close()
         curDirectory.close()
