@@ -12,18 +12,29 @@ import java.io.FileWriter
 
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a2 main running...")
+
+    try {
+        if (args[0] == "-init") {
+            println("Initializing the results files from paragraph file ${args[1]} and outline file ${args[2]}")
+        } else if (args[0] == "-eval") {
+            println("Evaluating the results files from ${args[2]} with qrels file ${args[1]}")
+        }
+    } catch (e: Exception) {
+        System.err.println("Requires all arguments to be use")
+    }
+
+
     println("expecting first argument to be paragraph data file path...")
+    try { println("using Paragraphs: ${args[0]} Pages: ${args[1]}")} catch(e: Exception) {
+        System.err.println("Did not give data file path...")
+        System.exit(-1)
+    }
 
     // Create files to be written to for the search engines
     val luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefault.results")
     val termFrequencyResults = FileWriter(System.getProperty("user.dir") + "termFrequency.results")
 
     println("Saving results at ${System.getProperty("user.dir")}")
-
-    try { println("using Paragraphs: ${args[0]} Pages: ${args[1]}")} catch(e: Exception) {
-        System.err.println("Did not give data file path...")
-        System.exit(-1)
-    }
 
     class freqSimilarity : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
@@ -79,6 +90,8 @@ fun main(args: Array<String>) {
         performQuery(termFrequencySearchEngine, parser, page.pageName, 100,
                 listOf(page.pageId.toString(), query.toString(), "team7-termFrequency"), termFrequencyResults)
     }
+
+    //val evaluator = Evaluator()
 
     searchEngine.closeSearchEngine()
     termFrequencySearchEngine.closeSearchEngine()

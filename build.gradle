@@ -28,8 +28,8 @@ sourceSets {
 }
 
 run {
-    if (project.hasProperty('arg1') && project.hasProperty('arg2')) {
-        args = [arg1, arg2]
+    if (project.hasProperty('arg1') && project.hasProperty('arg2') && project.hasProperty('arg3')) {
+        args = [arg1, arg2, arg3]
     } else {
         logger.lifecycle "missing data file argument"
     }
