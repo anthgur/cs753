@@ -27,8 +27,9 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
 
     fun performPageQuery(query: Query, numResults: Int, metaData: List<String>, resultsFile: FileWriter) {
         indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
+            val doc = indexSearcher.doc(it.doc)
             indexSearcher.doc(it.doc)
-            resultsFile.write("${metaData[1]}\tQ0\t${it.doc}\t$rank\t${it.score}\t${metaData[2]}\n")
+            resultsFile.write("${metaData[0]}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData[2]}\n")
         }
     }
 
