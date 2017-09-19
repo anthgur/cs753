@@ -35,7 +35,7 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
             val retrievedDocuments = testResults[query]
             if (retrievedDocuments != null) {
                 val averagePrecision = calculateAveragePrecision(relevantDocList, retrievedDocuments)
-                println("averagePrecision of $query is $averagePrecision")
+//                println("averagePrecision of $query is $averagePrecision")
                 sumOfAveragePrecisions += averagePrecision
             }
         }
@@ -45,17 +45,17 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
     private fun calculateAveragePrecision(relevantDocuments: ArrayList<qRelDataEntry>,
                                           retrievedDocuments: ArrayList<resultsDataEntry>): Double {
         val numberOfRelevantDocuments = relevantDocuments.size
-        println("relevant documents: $numberOfRelevantDocuments")
+//        println("relevant documents: $numberOfRelevantDocuments")
         var truePositives = 0.0
         var sumOfPrecisionsAtRelevantDocuments = 0.0
         retrievedDocuments.forEachIndexed { r, (docID) ->
             if (relevantDocuments.contains(qRelDataEntry(docID,true))) {
                 truePositives += 1.0
                 sumOfPrecisionsAtRelevantDocuments += truePositives / (r.toDouble()+1)
-                println("match! precision@${r.toDouble()} is ${truePositives/(r.toDouble()+1)}")
+//                println("match! precision@${r.toDouble()} is ${truePositives/(r.toDouble()+1)}")
             }
         }
-        println("averagePrecision $sumOfPrecisionsAtRelevantDocuments / ${numberOfRelevantDocuments.toDouble()}")
+//        println("averagePrecision $sumOfPrecisionsAtRelevantDocuments / ${numberOfRelevantDocuments.toDouble()}")
         return sumOfPrecisionsAtRelevantDocuments / numberOfRelevantDocuments.toDouble()
     }
 
