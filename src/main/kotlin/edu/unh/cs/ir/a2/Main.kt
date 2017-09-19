@@ -121,5 +121,6 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
 fun performEvaluation(resultsFile: String, qRelFile: String) {
     val evaluator = Evaluator(DataReader(resultsFile), DataReader(qRelFile))
     println("RPrecision: ${evaluator.calculateRPrecision()}")
+//    println("MAP: ${evaluator.calculateMeanAveragePrecision()}")
 }
 

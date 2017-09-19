@@ -6,7 +6,7 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
     private val testResults = resultsDataReader.readResultsFile()
 
     fun calculateRPrecision(): Double {
-        val numberOfQueries = testResults.size.toDouble()
+        val numberOfQueries = relevantDocuments.size.toDouble()
         var sumOfPrecisions = 0.0
         relevantDocuments.forEach { query, relevantDocList ->
             var currentPrecisionSum = 0.0
@@ -29,26 +29,33 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
     }
 
     fun calculateMeanAveragePrecision(): Double {
-        val numberOfQueries = testResults.size.toDouble()
+        val numberOfQueries = relevantDocuments.size.toDouble()
         var sumOfAveragePrecisions = 0.toDouble()
         relevantDocuments.forEach { query, relevantDocList ->
-            var truePositives = 0.0
-            var currentAveragePrecision = 0.0
-            val resultSet = testResults[query]
-            var n = 0
-            if (resultSet != null) {
-                n = resultSet.size
-                for ((docID) in  resultSet.slice(IntRange(0, n - 1))) {
-                   if (relevantDocList.contains(qRelDataEntry(docID, true))) {
-                       truePositives += 1.0
-                   }
-                }
-                currentAveragePrecision = truePositives / relevantDocList.size.toDouble()
-                sumOfAveragePrecisions += currentAveragePrecision
+            val retrievedDocuments = testResults[query]
+            if (retrievedDocuments != null) {
+                val averagePrecision = calculateAveragePrecision(relevantDocList, retrievedDocuments)
+                println("averagePrecision of $query is $averagePrecision")
+                sumOfAveragePrecisions += averagePrecision
             }
-
         }
         return sumOfAveragePrecisions / numberOfQueries
+    }
+
+    private fun calculateAveragePrecision(relevantDocuments: ArrayList<qRelDataEntry>,
+                                          retrievedDocuments: ArrayList<resultsDataEntry>): Double {
+        val numberOfRelevantDocuments = relevantDocuments.size
+        println("relevant documents: $numberOfRelevantDocuments")
+        var sumOfPrecisionsAtRelevantDocuments = 0.0
+        retrievedDocuments.forEachIndexed { r, (docID) ->
+            var truePositives = 0.0
+            if (relevantDocuments.contains(qRelDataEntry(docID,true))) {
+                truePositives += 1.0
+                sumOfPrecisionsAtRelevantDocuments += truePositives / (r.toDouble()+1)
+                println("match! precision@${r.toDouble()} is ${truePositives/(r.toDouble()+1)}")
+            }
+        }
+        return sumOfPrecisionsAtRelevantDocuments / numberOfRelevantDocuments.toDouble()
     }
 
     fun printData() {
