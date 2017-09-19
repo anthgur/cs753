@@ -46,15 +46,16 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
                                           retrievedDocuments: ArrayList<resultsDataEntry>): Double {
         val numberOfRelevantDocuments = relevantDocuments.size
         println("relevant documents: $numberOfRelevantDocuments")
+        var truePositives = 0.0
         var sumOfPrecisionsAtRelevantDocuments = 0.0
         retrievedDocuments.forEachIndexed { r, (docID) ->
-            var truePositives = 0.0
             if (relevantDocuments.contains(qRelDataEntry(docID,true))) {
                 truePositives += 1.0
                 sumOfPrecisionsAtRelevantDocuments += truePositives / (r.toDouble()+1)
                 println("match! precision@${r.toDouble()} is ${truePositives/(r.toDouble()+1)}")
             }
         }
+        println("averagePrecision $sumOfPrecisionsAtRelevantDocuments / ${numberOfRelevantDocuments.toDouble()}")
         return sumOfPrecisionsAtRelevantDocuments / numberOfRelevantDocuments.toDouble()
     }
 
