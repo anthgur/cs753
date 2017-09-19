@@ -66,6 +66,8 @@ fun main(args: Array<String>) {
     // Make the query build tool
     val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
 
+
+
     // Perform each query in the list and display top 10
     val queries = listOf("power nap benefits", "whale vocalization production of sound", "pokemon puzzle league")
     queries.forEach {
