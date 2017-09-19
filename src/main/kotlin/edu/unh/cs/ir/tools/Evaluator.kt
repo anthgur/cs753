@@ -31,9 +31,21 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
     fun calculateMeanAveragePrecision(): Double {
         val numberOfQueries = testResults.size.toDouble()
         var sumOfAveragePrecisions = 0.toDouble()
-        testResults.forEach { query, resultsDocList ->
-            var currentAveragePrecision = 0.toDouble()
-//            var n =
+        relevantDocuments.forEach { query, relevantDocList ->
+            var truePositives = 0.0
+            var currentAveragePrecision = 0.0
+            val resultSet = testResults[query]
+            var n = 0
+            if (resultSet != null) {
+                n = resultSet.size
+                for ((docID) in  resultSet.slice(IntRange(0, n - 1))) {
+                   if (relevantDocList.contains(qRelDataEntry(docID, true))) {
+                       truePositives += 1.0
+                   }
+                }
+                currentAveragePrecision = truePositives / relevantDocList.size.toDouble()
+                sumOfAveragePrecisions += currentAveragePrecision
+            }
 
         }
         return sumOfAveragePrecisions / numberOfQueries
