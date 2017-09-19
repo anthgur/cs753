@@ -22,7 +22,7 @@ class DataReader(private val fileName: String) {
      */
     fun readQRelFile(): HashMap<String, ArrayList<qRelDataEntry>> {
         if (!fileName.endsWith(".qrels")) {
-            throw InputMismatchException("Incorrect file format, expected .qrels!")
+            throw InputMismatchException("Incorrect file format, expected .qrels got $fileName!")
         }
         val mapOfRelevantFiles = HashMap<String, ArrayList<qRelDataEntry>>()
         val qRelFileScanner = Scanner(inputFile)
@@ -48,7 +48,7 @@ class DataReader(private val fileName: String) {
      */
     fun readResultsFile(): HashMap<String, ArrayList<resultsDataEntry>> {
         if (!fileName.endsWith(".results")) {
-            throw InputMismatchException("Incorrect file format, expected .results!")
+            throw InputMismatchException("Incorrect file format, expected .results got $fileName!")
         }
         val mapOfResultFiles = HashMap<String, ArrayList<resultsDataEntry>>()
         val resultsScanner = Scanner(inputFile)

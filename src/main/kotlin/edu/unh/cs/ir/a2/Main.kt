@@ -38,6 +38,7 @@ fun main(args: Array<String>) {
             performEvaluation(resultsFile, qRelFile)
         }
     } catch (e: Exception) {
+        System.err.println(e.message)
         System.err.println("Requires all arguments to be used!")
         println("usage:")
         println("-init [paragraphFilePath] [outlinesFilePath] | to generate results")
@@ -72,8 +73,8 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
     val termFrequencyIndexer = Indexer(termFrequencySimilarity)
 
     // Get paragraphs from the CBOR file
-    val paragraphStream = FileInputStream(args[0])
-    val pageStream = FileInputStream( args[1])
+    val paragraphStream = FileInputStream(args[1])
+    val pageStream = FileInputStream( args[2])
 
     // Add the paragraphs to the index
     DeserializeData.iterableParagraphs(paragraphStream).forEach{
@@ -117,7 +118,7 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
 }
 
 fun performEvaluation(resultsFile: String, qRelFile: String) {
-    val evaluator = Evaluator(DataReader(qRelFile), DataReader(resultsFile))
+    val evaluator = Evaluator(DataReader(resultsFile), DataReader(qRelFile))
     evaluator.printData()
 }
 
