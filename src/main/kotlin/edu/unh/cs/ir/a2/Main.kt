@@ -37,7 +37,8 @@ fun main(args: Array<String>) {
             qRelFile = args[2]
             performEvaluation(resultsFile, qRelFile)
         }
-    } catch (e: Exception) {
+    } catch (e: NoSuchFileException) {
+        System.err.println(e.stackTrace)
         System.err.println(e.message)
         System.err.println("Requires all arguments to be used!")
         println("usage:")
@@ -119,6 +120,6 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
 
 fun performEvaluation(resultsFile: String, qRelFile: String) {
     val evaluator = Evaluator(DataReader(resultsFile), DataReader(qRelFile))
-    evaluator.printData()
+    println("RPrecision: ${evaluator.calculateRPrecision()}")
 }
 

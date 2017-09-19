@@ -5,17 +5,26 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
     private val relevantDocuments = qRelDataReader.readQRelFile()
     private val testResults = resultsDataReader.readResultsFile()
 
-    fun calculateRPrecision() : Float {
-        val numberOfQueries = testResults.size.toFloat()
-        var sumOfPrecisions = 0.toFloat()
+    fun calculateRPrecision() : Double {
+        val numberOfQueries = testResults.size.toDouble()
+        var sumOfPrecisions = 0.toDouble()
         relevantDocuments.forEach { query, relevantDocList ->
-            var currentPrecisionSum = 0.toFloat()
-            val n = relevantDocList.size
+            var currentPrecisionSum = 0.toDouble()
+            var n = relevantDocList.size
             val resultSet = testResults[query]
-            for((docID) in resultSet!!.slice(IntRange(0,n))) {
-                if (relevantDocList.contains(qRelDataEntry(docID, true))){
-                    currentPrecisionSum +=
+            if (resultSet != null) {
+                if (resultSet.size < n) {
+                    n = resultSet.size
                 }
+                for ((docID) in resultSet.slice(IntRange(0, n-1))) {
+                    if (relevantDocList.contains(qRelDataEntry(docID, true))) {
+                        currentPrecisionSum += 1.toDouble()
+//                        println("match! $currentPrecisionSum for $query")
+                    }
+                }
+                currentPrecisionSum /= relevantDocList.size.toDouble()
+//                println("precision for $query is $currentPrecisionSum")
+                sumOfPrecisions += currentPrecisionSum
             }
         }
         return sumOfPrecisions / numberOfQueries
