@@ -95,7 +95,8 @@ fun main(args: Array<String>) {
 
         val eval = Evaluator(qrelReader, resReader)
 
-        print(eval.PrecisionAtR())
+        println(eval.PrecisionAtR())
+        println(eval.MAP())
     }
 }
 

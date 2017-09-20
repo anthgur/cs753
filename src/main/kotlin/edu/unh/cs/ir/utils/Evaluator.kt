@@ -29,9 +29,28 @@ class Evaluator(qrels: Reader, results: Reader){
         return totalSum / relMap.size.toDouble()
     }
 
-    fun MAP()
+    fun MAP() : Double
     {
+        var AP = 0.0
+        relMap.forEach { query, docList ->
+            val R = docList.size.toDouble()
+            val resList = resMap[query]
+            var localSum = 0.0
+            var tp = 0.0
+            if (resList != null)
+            {
+                resList.forEach {
+                    if (docList.contains(qRelDataEntry(it.docID, true)))
+                    {
+                        tp += 1.0
+                        localSum += (tp / (it.rank + 1))
+                    }
+                }
+            }
+            AP += localSum / R
+        }
 
+        return (AP / relMap.size.toDouble())
     }
 
     fun iDCG()
