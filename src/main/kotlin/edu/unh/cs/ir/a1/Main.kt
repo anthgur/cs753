@@ -1,5 +1,8 @@
 package edu.unh.cs.ir.a1
 
+import edu.unh.cs.ir.utils.Indexer
+import edu.unh.cs.ir.utils.IndexerFields
+import edu.unh.cs.ir.utils.SearchEngine
 import edu.unh.cs.treccar.read_data.DeserializeData
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.queryparser.classic.QueryParser

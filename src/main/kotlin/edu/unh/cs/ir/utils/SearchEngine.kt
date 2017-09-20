@@ -1,4 +1,4 @@
-package edu.unh.cs.ir.a1
+package edu.unh.cs.ir.utils
 
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.search.IndexSearcher
@@ -25,19 +25,12 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
         }
     }
 
-    fun performQuery(query: Query, numResults: Int, queryId: String, method: String) {
-        val theWritingWriter:FileWriter
-        if (method == "team7-LuceneDefault")
-            theWritingWriter = FileWriter(System.getProperty("user.dir") + "luceneDefault.result")
-        else
-            theWritingWriter = FileWriter(System.getProperty("user.dir") + "termFrequency.result")
-        var rank = 1
-        indexSearcher.search(query, numResults).scoreDocs.forEach {
+    fun performPageQuery(query: Query, numResults: Int, metaData: List<String>, resultsFile: FileWriter) {
+        indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
             val doc = indexSearcher.doc(it.doc)
-            theWritingWriter.write(queryId + " Q0 " + doc.get("id").toLowerCase() + " " +
-                rank++ + " " + it.score + " " + method + "\n")
+            indexSearcher.doc(it.doc)
+            resultsFile.write("${metaData[0]}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData[2]}\n")
         }
-        theWritingWriter.close()
     }
 
     fun closeSearchEngine() {

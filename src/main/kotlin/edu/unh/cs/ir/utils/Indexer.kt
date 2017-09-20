@@ -1,4 +1,4 @@
-package edu.unh.cs.ir.a1
+package edu.unh.cs.ir.utils
 
 import edu.unh.cs.treccar.Data
 import org.apache.lucene.analysis.standard.StandardAnalyzer
