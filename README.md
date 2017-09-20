@@ -2,7 +2,11 @@
 
 Project Repository for Team 7
 
-We use Gradle as a build system to build a particular assignment first make sure the `mainClassName` in `build.gradle` points to the correct `Main.kt` file you want to run. On a Linux system use the provided `gradlew` shell script if on Windows use the `gradlew.bat` batch file. Below we assume a Linux system, but replacing the shell script for the batch file will work on Windows.
+We use Gradle as a build system to build a particular assignment first make sure the `mainClassName` in `build.gradle` points to the correct `Main.kt` file you want to run. 
+
+Gradle requires you to have Java our project requires you to have Java 1.8 installed. 
+
+On a Linux system use the provided `gradlew` shell script if on Windows use the `gradlew.bat` batch file. Below we assume a Linux system, but replacing the shell script for the batch file will work on Windows. Initialize the Gradle environment by running ```./gradlew``` or ```./gradlew init```.
 
 Then simply build the project with ```./gradlew build```
 
