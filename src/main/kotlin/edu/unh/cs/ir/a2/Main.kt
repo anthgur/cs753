@@ -97,6 +97,7 @@ fun main(args: Array<String>) {
 
         println(eval.PrecisionAtR())
         println(eval.MAP())
+        println(eval.NDCG20())
     }
 }
 

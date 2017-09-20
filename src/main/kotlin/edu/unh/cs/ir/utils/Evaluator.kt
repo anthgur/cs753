@@ -53,18 +53,45 @@ class Evaluator(qrels: Reader, results: Reader){
         return (AP / relMap.size.toDouble())
     }
 
-    fun iDCG()
+    fun iDCG(query: String) : Double
     {
-
+        var totalSum = 0.0
+        var k = 20
+        val relDocs = relMap[query]
+        if (relDocs != null) {
+            if (k > relDocs.size)
+                k = relDocs.size
+            for (i in IntRange(0, k)) {
+                totalSum += ((Math.pow(2.0,1.0) - 1) / (Math.log(1.0+i+1.0)))
+            }
+        }
+        return totalSum
     }
 
-    fun DCG()
+    fun DCG(query: String) : Double
     {
-
+        var totalSum = 0.0
+        var k = 20
+        val resDocs = resMap[query]
+        if (resDocs != null) {
+            if (k > resDocs.size)
+                k = resDocs.size
+            for (i in IntRange(0, k - 1)) {
+                if (relMap[query]!!.contains(qRelDataEntry(resDocs[i].docID, true)))
+                    totalSum += ((Math.pow(2.0,1.0) - 1) / (Math.log(1.0+i+1.0)))
+                else
+                    totalSum += ((Math.pow(2.0,0.0) - 1) / (Math.log(1.0+i+1.0)))
+            }
+        }
+        return totalSum
     }
 
-    fun NDCG20()
+    fun NDCG20() : Double
     {
-
+        var totalSum = 0.0
+        relMap.forEach { query, docList ->
+            totalSum += ((1/iDCG(query))*DCG(query))
+        }
+        return totalSum / relMap.size.toDouble()
     }
 }
