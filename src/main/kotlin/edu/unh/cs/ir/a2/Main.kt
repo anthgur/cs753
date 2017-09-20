@@ -120,8 +120,14 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
 
 fun performEvaluation(resultsFile: String, qRelFile: String) {
     val evaluator = Evaluator(DataReader(resultsFile), DataReader(qRelFile))
-    println("RPrecision: ${evaluator.calculateRPrecision()}")
-    println("MAP: ${evaluator.calculateMeanAveragePrecision()}")
-    println("nDCG: ${evaluator.calculateNormalizedDiscountCumulativeGain()}")
+    val rPrecisionMean = evaluator.calculateRPrecision()
+    val rPrecisionError = evaluator.calculateRPrecisionError(rPrecisionMean)
+    val mapMean = evaluator.calculateMeanAveragePrecision()
+    val mapError = evaluator.calculateMeanAveragePrecisionError(mapMean)
+    val nDCGMean = evaluator.calculateNormalizedDiscountCumulativeGain()
+    val nDCGError = evaluator.calculateNormalizedDiscountCumulativeGainError(nDCGMean)
+    println("RPrecision: $rPrecisionMean Error $rPrecisionError")
+    println("MAP: $mapMean Error $mapError")
+    println("nDCG: $nDCGMean Error $nDCGError")
 }
 

@@ -28,6 +28,29 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
         return sumOfPrecisions / numberOfQueries
     }
 
+    fun calculateRPrecisionError(mean: Double): Double {
+        val numberOfQueries = relevantDocuments.size.toDouble()
+        var varianceSum = 0.0
+        relevantDocuments.forEach { query, relevantDocList ->
+            var currentPrecisionSum = 0.0
+            var n = relevantDocList.size
+            val resultSet = testResults[query]
+            if (resultSet != null) {
+                if (resultSet.size < n) {
+                    n = resultSet.size
+                }
+                for ((docID) in resultSet.slice(IntRange(0, n - 1))) {
+                    if (relevantDocList.contains(qRelDataEntry(docID, true))) {
+                        currentPrecisionSum += 1.0
+                    }
+                }
+                currentPrecisionSum /= relevantDocList.size.toDouble()
+                varianceSum += (currentPrecisionSum - mean) * (currentPrecisionSum - mean)
+            }
+        }
+        return Math.sqrt(varianceSum / (numberOfQueries - 1.0)) * (1.0 / Math.sqrt(numberOfQueries))
+    }
+
     fun calculateMeanAveragePrecision(): Double {
         val numberOfQueries = relevantDocuments.size.toDouble()
         var sumOfAveragePrecisions = 0.0
@@ -42,7 +65,20 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
         return sumOfAveragePrecisions / numberOfQueries
     }
 
-    fun calculateNormalizedDiscountCumulativeGain(k: Int = 20) : Double {
+    fun calculateMeanAveragePrecisionError(mean: Double): Double {
+        val numberOfQueries = relevantDocuments.size.toDouble()
+        var varianceSum = 0.0
+        relevantDocuments.forEach { query, relevantDocList ->
+            val retriedDocuments = testResults[query]
+            if (retriedDocuments != null) {
+                val averagePrecision = calculateAveragePrecision(relevantDocList, retriedDocuments)
+                varianceSum += (averagePrecision - mean) * (averagePrecision - mean)
+            }
+        }
+        return Math.sqrt(varianceSum / (numberOfQueries - 1.0)) * (1.0 / Math.sqrt(numberOfQueries))
+    }
+
+    fun calculateNormalizedDiscountCumulativeGain(k: Int = 20): Double {
         val numberOfQueries = relevantDocuments.size.toDouble()
         var sumOfNDCG = 0.0
         relevantDocuments.forEach { query, relevantDocList ->
@@ -55,6 +91,21 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
         }
         return sumOfNDCG / numberOfQueries
     }
+
+    fun calculateNormalizedDiscountCumulativeGainError(mean: Double, k: Int = 20): Double {
+        val numberOfQueries = relevantDocuments.size.toDouble()
+        var varianceSum = 0.0
+        relevantDocuments.forEach { query, relevantDocList ->
+            val retrievedDocuments = testResults[query]
+            if (retrievedDocuments != null) {
+                val nDCG = calculateDiscountCumulativeGain(k, retrievedDocuments, query)
+                val iNDCG = calculateIdealCumulativeGain(k, relevantDocList)
+                varianceSum += ((nDCG / iNDCG) - mean) * ((nDCG / iNDCG) - mean)
+            }
+        }
+        return Math.sqrt(varianceSum / (numberOfQueries - 1.0)) * (1.0 / Math.sqrt(numberOfQueries))
+    }
+
     private fun calculateAveragePrecision(relevantDocs: ArrayList<qRelDataEntry>,
                                           retrievedDocs: ArrayList<resultsDataEntry>): Double {
         val numberOfRelevantDocuments = relevantDocs.size
@@ -72,19 +123,20 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
         return sumOfPrecisionsAtRelevantDocuments / numberOfRelevantDocuments.toDouble()
     }
 
-    private fun calculateIdealCumulativeGain(k: Int = 20, relevantDocs: ArrayList<qRelDataEntry>) : Double {
+    private fun calculateIdealCumulativeGain(k: Int = 20, relevantDocs: ArrayList<qRelDataEntry>): Double {
         var sumOfDiscountCumulativeGain = 0.0
         var currentAdditionsToTheSum = 0
         relevantDocs.forEachIndexed { m, _ ->
             if (currentAdditionsToTheSum < k) {
                 sumOfDiscountCumulativeGain += (Math.pow(2.0, 1.0) - 1.0) / (Math.log(1.0 + m + 1) / Math.log(2.0))
             }
-            currentAdditionsToTheSum ++
+            currentAdditionsToTheSum++
         }
         return sumOfDiscountCumulativeGain
     }
+
     private fun calculateDiscountCumulativeGain(k: Int = 20, retrievedDocuments: ArrayList<resultsDataEntry>,
-                                           query: String): Double {
+                                                query: String): Double {
         var sumOfDiscountCumulativeGain = 0.0
         var currentAdditionsToTheSum = 0
         val relevantDocs = relevantDocuments[query]
@@ -94,7 +146,7 @@ class Evaluator(qRelDataReader: DataReader, resultsDataReader: DataReader) {
                     sumOfDiscountCumulativeGain += (Math.pow(2.0, 1.0) - 1.0) / (Math.log(1.0 + m + 1) / Math.log(2.0))
                 }
             }
-            currentAdditionsToTheSum ++
+            currentAdditionsToTheSum++
         }
         return sumOfDiscountCumulativeGain
     }
