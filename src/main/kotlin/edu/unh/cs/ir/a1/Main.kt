@@ -77,11 +77,11 @@ fun main(args: Array<String>) {
         println()
     }
 
-    searchEngine.closeSearchEngine()
-    termFrequencySearchEngine.closeSearchEngine()
+    searchEngine.close()
+    termFrequencySearchEngine.close()
 }
 
 fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int) {
-    searchEngine.performQuery(parser.createBooleanQuery(
-            IndexerFields.CONTENT.toString().toLowerCase(), query), numResults)
+    TODO("rewrite output that was coupled to SearchEngine")
+    //    searchEngine.performQuery(query, numResults)
 }

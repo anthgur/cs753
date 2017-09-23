@@ -1,42 +1,52 @@
 package edu.unh.cs.ir.tools
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.document.Document
 import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
-import org.apache.lucene.search.similarities.SimilarityBase
-import org.apache.lucene.store.RAMDirectory
-import java.io.FileWriter
+import org.apache.lucene.search.TopDocs
+import org.apache.lucene.search.similarities.Similarity
+import org.apache.lucene.store.Directory
 
-data class Metadata(val pageId: String, val query: String, val title: String)
+interface CustomQueryBuilder {
+    fun build(query: String): Query
+}
 
-class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) {
-    private val curDirectory = directory
-    private val directoryReader = DirectoryReader.open(curDirectory)
+class DefaultQueryBuilder : CustomQueryBuilder {
+    private val analyzer = StandardAnalyzer()
+    private val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
+
+    override fun build(query: String): Query {
+        return parser.createBooleanQuery(IndexerFields.CONTENT.toString().toLowerCase(), query)
+    }
+}
+
+class SearchEngine(val directory: Directory,
+                   similarity: Similarity? = null,
+                   val queryBuilder: CustomQueryBuilder = DefaultQueryBuilder()) {
+
+    private val directoryReader = DirectoryReader.open(directory)
     private val indexSearcher = IndexSearcher(directoryReader)
 
-    init{
-        if(similarity != null) indexSearcher.setSimilarity(similarity)
-    }
-
-    fun performQuery(query: Query, numResults: Int) {
-        indexSearcher.search(query, numResults).scoreDocs.forEach {
-            val doc = indexSearcher.doc(it.doc)
-            print("paragraph ID: ${it.doc} - ")
-            print("paragraph ID: ${doc.get(IndexerFields.ID.toString().toLowerCase())}")
-            println(" - content: ${doc.get(IndexerFields.CONTENT.toString().toLowerCase())}")
+    init {
+        if (similarity != null) {
+            indexSearcher.setSimilarity(similarity)
         }
     }
 
-    fun performPageQuery(query: Query, numResults: Int, metaData: Metadata, resultsFile: FileWriter) {
-        indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
-            val doc = indexSearcher.doc(it.doc)
-            indexSearcher.doc(it.doc)
-            resultsFile.write("${metaData.pageId}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData.title}\n")
-        }
+    fun performQuery(rawQuery: String, numResults: Int): TopDocs {
+        val query = queryBuilder.build(rawQuery)
+        return indexSearcher.search(query, numResults)
     }
 
-    fun closeSearchEngine() {
+    fun getDoc(id: Int): Document? {
+        return indexSearcher.doc(id)
+    }
+
+    fun close() {
         directoryReader.close()
-        curDirectory.close()
+        directory.close()
     }
 }

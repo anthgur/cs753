@@ -1,14 +1,10 @@
 package edu.unh.cs.ir.a2
 
+import edu.unh.cs.ir.tools.*
 import edu.unh.cs.treccar.read_data.DeserializeData
-import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.similarities.BasicStats
 import org.apache.lucene.search.similarities.SimilarityBase
-import org.apache.lucene.util.QueryBuilder
 import java.io.FileInputStream
-import edu.unh.cs.ir.tools.*
-import java.io.FileReader
 import java.io.FileWriter
 
 fun main(args: Array<String>) {
@@ -18,7 +14,6 @@ fun main(args: Array<String>) {
     val termFrequencyResults: FileWriter
     val resultsFile: String
     val qRelFile: String
-
 
     try {
         if (args[0] == "-init") {
@@ -47,12 +42,6 @@ fun main(args: Array<String>) {
     }
 }
 
-fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int,
-                 metaData: Metadata, resultsFile: FileWriter) {
-    searchEngine.performPageQuery(parser.createBooleanQuery(
-            IndexerFields.CONTENT.toString().toLowerCase(), query), numResults, metaData, resultsFile)
-}
-
 fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: FileWriter, args: Array<String>) {
     class freqSimilarity : SimilarityBase() {
         override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
@@ -78,7 +67,7 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
     val pageStream = FileInputStream( args[2])
 
     // Add the paragraphs to the index
-    DeserializeData.iterableParagraphs(paragraphStream).forEach{
+    DeserializeData.iterableParagraphs(paragraphStream).forEach {
         indexer.indexParagraph(it)
         termFrequencyIndexer.indexParagraph(it)
     }
@@ -86,9 +75,6 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
     // Close after we load the entries
     indexer.closeIndex()
     termFrequencyIndexer.closeIndex()
-
-    // Create the analyzer for the search engine
-    val analyzer = StandardAnalyzer()
 
     // Create the search engine
     val directory = indexer.indexDir
@@ -98,21 +84,23 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
     val termFrequencyDirectory = termFrequencyIndexer.indexDir
     val termFrequencySearchEngine = SearchEngine(termFrequencyDirectory, termFrequencySimilarity)
 
-    // Make the query build tool
-    val parser = QueryParser(IndexerFields.CONTENT.toString().toLowerCase(), analyzer)
-
     // Use the pages as the query
-    DeserializeData.iterableAnnotations(pageStream).forEachIndexed { query, page ->
-        performQuery(searchEngine, parser, page.pageName, 100,
-                Metadata(page.pageId.toString(), query.toString(), "team7-luceneDefault"), luceneDefaultResults)
-        performQuery(termFrequencySearchEngine, parser, page.pageName, 100,
-                Metadata(page.pageId.toString(), query.toString(), "team7-termFrequency"), termFrequencyResults)
+    DeserializeData.iterableAnnotations(pageStream).forEach { page ->
+        val pageId = page.pageId.toString()
+        searchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
+            val doc = searchEngine.getDoc(scoreDoc.doc)
+            val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+            luceneDefaultResults.write("${pageId}\tQ0\t${docId}\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
+        }
+        termFrequencySearchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
+            val doc = termFrequencySearchEngine.getDoc(scoreDoc.doc)
+            val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+            luceneDefaultResults.write("${pageId}\tQ0\t${docId}\t$rank\t${scoreDoc.score}\tteam7-termFrequency\n")
+        }
     }
 
-    //val evaluator = Evaluator()
-
-    searchEngine.closeSearchEngine()
-    termFrequencySearchEngine.closeSearchEngine()
+    searchEngine.close()
+    termFrequencySearchEngine.close()
 
     termFrequencyResults.close()
     luceneDefaultResults.close()
