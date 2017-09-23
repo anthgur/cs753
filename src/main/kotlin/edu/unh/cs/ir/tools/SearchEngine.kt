@@ -7,6 +7,8 @@ import org.apache.lucene.search.similarities.SimilarityBase
 import org.apache.lucene.store.RAMDirectory
 import java.io.FileWriter
 
+data class Metadata(val pageId: String, val query: String, val title: String)
+
 class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) {
     private val curDirectory = directory
     private val directoryReader = DirectoryReader.open(curDirectory)
@@ -25,11 +27,11 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
         }
     }
 
-    fun performPageQuery(query: Query, numResults: Int, metaData: List<String>, resultsFile: FileWriter) {
+    fun performPageQuery(query: Query, numResults: Int, metaData: Metadata, resultsFile: FileWriter) {
         indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
             val doc = indexSearcher.doc(it.doc)
             indexSearcher.doc(it.doc)
-            resultsFile.write("${metaData[0]}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData[2]}\n")
+            resultsFile.write("${metaData.pageId}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData.title}\n")
         }
     }
 

@@ -48,7 +48,7 @@ fun main(args: Array<String>) {
 }
 
 fun performQuery(searchEngine: SearchEngine, parser: QueryBuilder, query: String, numResults: Int,
-                 metaData: List<String>, resultsFile: FileWriter) {
+                 metaData: Metadata, resultsFile: FileWriter) {
     searchEngine.performPageQuery(parser.createBooleanQuery(
             IndexerFields.CONTENT.toString().toLowerCase(), query), numResults, metaData, resultsFile)
 }
@@ -104,9 +104,9 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
     // Use the pages as the query
     DeserializeData.iterableAnnotations(pageStream).forEachIndexed { query, page ->
         performQuery(searchEngine, parser, page.pageName, 100,
-                listOf(page.pageId.toString(), query.toString(), "team7-luceneDefault"), luceneDefaultResults)
+                Metadata(page.pageId.toString(), query.toString(), "team7-luceneDefault"), luceneDefaultResults)
         performQuery(termFrequencySearchEngine, parser, page.pageName, 100,
-                listOf(page.pageId.toString(), query.toString(), "team7-termFrequency"), termFrequencyResults)
+                Metadata(page.pageId.toString(), query.toString(), "team7-termFrequency"), termFrequencyResults)
     }
 
     //val evaluator = Evaluator()
