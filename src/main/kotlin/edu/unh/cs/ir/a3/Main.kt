@@ -86,6 +86,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     val lncDirectory = lncIndexer.indexDir
     val lncLtnSearchEngine = SearchEngine(lncDirectory, ltnSimilarity)
 
+    // Page title queries
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
         val pageId = page.pageId.toString()
         searchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
@@ -120,3 +121,4 @@ fun performEvaluation(resultsFile: String, qRelFile: String) {
     println("MAP: $mapMean Error $mapError")
     println("nDCG: $nDCGMean Error $nDCGError")
 }
+
