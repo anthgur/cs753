@@ -90,12 +90,12 @@ fun generateResults(luceneDefaultResults: FileWriter, termFrequencyResults: File
         searchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
             val doc = searchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-            luceneDefaultResults.write("${pageId}\tQ0\t${docId}\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
+            luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
         }
         termFrequencySearchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
             val doc = termFrequencySearchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-            luceneDefaultResults.write("${pageId}\tQ0\t${docId}\t$rank\t${scoreDoc.score}\tteam7-termFrequency\n")
+            luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-termFrequency\n")
         }
     }
 

@@ -23,9 +23,9 @@ class DefaultQueryBuilder : CustomQueryBuilder {
     }
 }
 
-class SearchEngine(val directory: Directory,
+class SearchEngine(private val directory: Directory,
                    similarity: Similarity? = null,
-                   val queryBuilder: CustomQueryBuilder = DefaultQueryBuilder()) {
+                   private val queryBuilder: CustomQueryBuilder = DefaultQueryBuilder()) {
 
     private val directoryReader = DirectoryReader.open(directory)
     private val indexSearcher = IndexSearcher(directoryReader)
