@@ -40,6 +40,6 @@ For example, to generate the results files:
 
 To run the evaluations on the default Lucene scoring function:
 
-```./gradlew run -Parg1="-eval" -Parg2="/aboslute/path/to/train.test200.cbor.article.qrels" -Parg3="/absolute/path/to/cs753luceneDefault.results"```
+```./gradlew run -Parg1="-eval" -Parg2="/aboslute/path/to/train.test200.cbor.article.qrels" -Parg3="../cs753luceneDefault.results"```
 
 # a3
