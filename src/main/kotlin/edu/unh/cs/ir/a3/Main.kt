@@ -73,7 +73,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     val pageStream = FileInputStream(args[2])
 
     // Holds our frequencies in a table representation
-    val invertedIndex = HashMap<String, ArrayList<DocumentFrequency>>()
+    val invertedIndex = InvertedIndex()
 
     // Standard token and stemming rules
     val analyzer = StandardAnalyzer()
@@ -84,35 +84,14 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
-            if (invertedIndex[token] != null) {
-                if (invertedIndex[token]!![invertedIndex[token]!!.size -1].id == currentIndexDocID.toString()) {
-                    invertedIndex[token]!![invertedIndex[token]!!.size -1].frequency += 1
-                } else {
-                    val newDocFrequency = DocumentFrequency(currentIndexDocID.toString(), 1)
-                    invertedIndex[token]?.add(newDocFrequency)
-                }
-            } else if (invertedIndex[token] == null) {
-                val newDocFrequencyList = ArrayList<DocumentFrequency>()
-                val newDocFrequency = DocumentFrequency(currentIndexDocID.toString(), 1)
-                newDocFrequencyList.add(newDocFrequency)
-                invertedIndex[token] = newDocFrequencyList
-            }
+           invertedIndex.addToIndex(token, currentIndexDocID)
         }
         indexer.indexParagraph(it)
         lncIndexer.indexParagraph(it)
         currentIndexDocID++
     }
 
-    invertedIndex.forEach { token, list ->
-        if (token == "puzzle") {
-            print("$token : ")
-            list.forEach { (id, freq) ->
-                print("($id|$freq)->")
-            }
-            print("END")
-            println()
-        }
-    }
+    invertedIndex.printEntireIndex()
 
     // Close after we load the entries
     indexer.closeIndex()
