@@ -5,7 +5,6 @@ import edu.unh.cs.tools.TokenizerAnalyzer
 import edu.unh.cs.treccar.read_data.DeserializeData
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.search.similarities.BasicStats
-import org.apache.lucene.search.similarities.Similarity
 import org.apache.lucene.search.similarities.SimilarityBase
 import java.io.FileInputStream
 import java.io.FileWriter
@@ -15,6 +14,8 @@ fun main(args: Array<String>) {
 
     val luceneDefaultResults: FileWriter
     val lncLtnResults: FileWriter
+    val bnnBnnResults: FileWriter
+    val ancApcResults: FileWriter
     val resultsFile: String
     val qRelFile: String
 
@@ -25,9 +26,12 @@ fun main(args: Array<String>) {
                 println("expecting second argument to be outline data file path...")
                 println("Initializing the results files from paragraph file ${args[1]} and outline file ${args[2]}")
                 println("Saving results at ${System.getProperty("user.dir")}")
+                println("Running the ${args[3]} model.")
                 luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefault.results")
-                lncLtnResults = FileWriter(System.getProperty("user.dir") + "lncLtnResults.results")
-                generateResults(luceneDefaultResults, lncLtnResults, args)
+                lncLtnResults = FileWriter(System.getProperty("user.dir") + "lncLtn.results")
+                bnnBnnResults = FileWriter(System.getProperty("user.dir") + "bnnBnn.results")
+                ancApcResults = FileWriter(System.getProperty("user.dir") + "ancApc.results")
+                generateResults(luceneDefaultResults, lncLtnResults, bnnBnnResults, ancApcResults, args)
             }
             args[0] == "-eval" -> {
                 println("expecting first argument to be the qrels file path...")
@@ -47,20 +51,27 @@ fun main(args: Array<String>) {
     } catch (e: NoSuchFieldError) {
         println("Requires all arguments to be used!")
         println("usage:")
-        println("-init [paragraphFilePath] [outlinesFilePath] | to generate results")
-        println("-eval [qRelFilePath] [resultsFileFromInitPath] to evaluate the results")
+        println("-init [paragraphFilePath] [outlinesFilePath] [model] | to generate results")
+        println("-eval [qRelFilePath] [resultsFileFromInitPath] | to evaluate the results")
         println(e.message)
 
     }
 
 }
 
-fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter, args: Array<String>) {
+fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
+                    bnnBnnResults: FileWriter, ancApcResults: FileWriter, args: Array<String>) {
     // Create an indexer for Lucene default
     val indexer = Indexer()
 
     // Create an index for LNC.LTN
     val lncLtnIndexer = Indexer()
+
+    // Create an index for BNN.BNN
+    val bnnBnnIndexer = Indexer()
+
+    // Create an index for ANC.APC
+    val ancApcIndexer = Indexer()
 
     // Get paragraphs from the CBOR file
     val paragraphStream = FileInputStream(args[1])
@@ -78,63 +89,142 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     var currentIndexDocID = 0
 
     // Document vectors
-    val documentVectors = ArrayList<ArrayList<Double>>()
+    val documentVectorsLnc = ArrayList<ArrayList<Double>>()
+    val documentVectorsBnn = ArrayList<ArrayList<Double>>()
+    val documentVectorsAnc = ArrayList<ArrayList<Double>>()
+
+    val model = args[3]
 
     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
             invertedIndex.addToIndex(token, currentIndexDocID)
         }
-        documentVectors.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
+        if (model == "lncltn") {
+            documentVectorsLnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
+            lncLtnIndexer.indexParagraph(it)
+        } else if (model == "bnnbnn") {
+            documentVectorsBnn.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.BNN, currentIndexDocID))
+            bnnBnnIndexer.indexParagraph(it)
+        } else if (model == "ancapc") {
+            documentVectorsAnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.ANC, currentIndexDocID))
+            ancApcIndexer.indexParagraph(it)
+        }
         indexer.indexParagraph(it)
-        lncLtnIndexer.indexParagraph(it)
         currentIndexDocID++
     }
+
+    println("Indexing complete.")
 
 
     // Close after we load the entries
     indexer.closeIndex()
     lncLtnIndexer.closeIndex()
+    bnnBnnIndexer.closeIndex()
+    ancApcIndexer.closeIndex()
 
     // Create the search engines
     val directory = indexer.indexDir
 
     val lncLtnDirectory = lncLtnIndexer.indexDir
+    val bnnBnnDirectory = bnnBnnIndexer.indexDir
+    val ancApcDirectory = ancApcIndexer.indexDir
+
+//    println(currentIndexDocID)
+
+    val maxDocID = currentIndexDocID
 
     // Page title queries
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
         val query = page.pageName
         val pageId = page.pageId.toString()
         val tokenizedQuery = tokenizeQuery(query, analyzer)
-        val queryVector = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.LTN)
 
-        val ourSimilarity = customSimilarity(invertedIndex, documentVectors, queryVector)
+        val queryVectorLtn = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.LTN)
+        val queryVectorBnn = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.BNN)
+        val queryVectorApc = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.APC)
+
+        val lncLtnSim = lncLtnSimilarity(invertedIndex, documentVectorsLnc, queryVectorLtn)
+        val bnnBnnSim = bnnBnnSimilarity(invertedIndex, documentVectorsBnn, queryVectorBnn)
+        val ancApcSim = ancApcSimilarity(invertedIndex, documentVectorsAnc, queryVectorApc)
+
         val searchEngine = SearchEngine(directory)
-        val ltnLncEngine = SearchEngine(lncLtnDirectory, ourSimilarity)
+        val ltnLncEngine = SearchEngine(lncLtnDirectory, lncLtnSim)
+        val bnnBnnEngine = SearchEngine(bnnBnnDirectory, bnnBnnSim)
+        val ancApcEngine = SearchEngine(ancApcDirectory, ancApcSim)
 
-        searchEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
-            val doc = searchEngine.getDoc(scoreDoc.doc)
-            val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-            luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
+        print("Starting Lucene default results...")
+
+        val topDefaultScoredDocuments = searchEngine.performQuery(query, 100)
+
+        topDefaultScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+            if (scoreDoc.doc <= maxDocID) {
+                val doc = searchEngine.getDoc(scoreDoc.doc)
+                val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
+            }
         }
-        ltnLncEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
-            val doc = searchEngine.getDoc(scoreDoc.doc)
-            val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-            lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
+
+        println("Lucene default results done.")
+
+        if (model == "lncltn") {
+            print("Starting LNC.LTN results...")
+
+            val topLncLtnScoredDocuments = ltnLncEngine.performQuery(query, 100)
+
+            topLncLtnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                if (scoreDoc.doc <= maxDocID) {
+                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
+                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                    lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
+                }
+            }
+            println("LNC.LTN results done.")
         }
 
-   }
+        if (model == "bnnbnn") {
+            print("Starting BNN.BNN results...")
 
+            val topBnnBnnScoredDocuments = bnnBnnEngine.performQuery(query, 100)
 
+            topBnnBnnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                if (scoreDoc.doc <= maxDocID) {
+                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
+                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                    bnnBnnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bnnbnn\n")
+                }
+            }
+            println("BNN.BNN results done.")
+        }
+
+        if (model == "ancapc") {
+            print("Starting ANC.APC results...")
+
+            val topAncApcScoredDocuments = ancApcEngine.performQuery(query, 100)
+
+            topAncApcScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                if (scoreDoc.doc <= maxDocID) {
+                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
+                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                    ancApcResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ancapc\n")
+                }
+            }
+
+            println("ANC.APC results done.")
+        }
+
+    }
 
     luceneDefaultResults.close()
     lncLtnResults.close()
+    bnnBnnResults.close()
+    ancApcResults.close()
 
 }
 
-class customSimilarity(private val invertedIndex: InvertedIndex, private val documentVectors: ArrayList<ArrayList<Double>>,
+class lncLtnSimilarity(private val invertedIndex: InvertedIndex, private val documentVectors: ArrayList<ArrayList<Double>>,
                        private val queryVector: ArrayList<Double>) : SimilarityBase() {
-    var currentDocument = 0
+    private var currentDocument = 0
 
     override fun toString(): String {
         return "LNC.LTN Similarity"
@@ -145,6 +235,46 @@ class customSimilarity(private val invertedIndex: InvertedIndex, private val doc
                 TFIDF_DOC_TYPE.LNC)
         val normalizedQueryVector = invertedIndex.normalizeVector(queryVector,
                 TFIDF_DOC_TYPE.BNN)
+        val score = calculateInnerProduct(normalizedDocumentVector, normalizedQueryVector)
+        currentDocument++
+        return score.toFloat()
+    }
+
+}
+
+class bnnBnnSimilarity(private val invertedIndex: InvertedIndex, private val documentVectors: ArrayList<ArrayList<Double>>,
+                       private val queryVector: ArrayList<Double>) : SimilarityBase() {
+    private var currentDocument = 0
+
+    override fun toString(): String {
+        return "LNC.LTN Similarity"
+    }
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        val normalizedDocumentVector = invertedIndex.normalizeVector(documentVectors[currentDocument],
+                TFIDF_DOC_TYPE.BNN)
+        val normalizedQueryVector = invertedIndex.normalizeVector(queryVector,
+                TFIDF_DOC_TYPE.BNN)
+        val score = calculateInnerProduct(normalizedDocumentVector, normalizedQueryVector)
+        currentDocument++
+        return score.toFloat()
+    }
+
+}
+
+class ancApcSimilarity(private val invertedIndex: InvertedIndex, private val documentVectors: ArrayList<ArrayList<Double>>,
+                       private val queryVector: ArrayList<Double>) : SimilarityBase() {
+    private var currentDocument = 0
+
+    override fun toString(): String {
+        return "LNC.LTN Similarity"
+    }
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        val normalizedDocumentVector = invertedIndex.normalizeVector(documentVectors[currentDocument],
+                TFIDF_DOC_TYPE.ANC)
+        val normalizedQueryVector = invertedIndex.normalizeVector(queryVector,
+                TFIDF_DOC_TYPE.ANC)
         val score = calculateInnerProduct(normalizedDocumentVector, normalizedQueryVector)
         currentDocument++
         return score.toFloat()
