@@ -15,7 +15,6 @@ class Indexer(similarity: SimilarityBase? = null) {
     val indexDir = RAMDirectory()
     private val config = IndexWriterConfig(StandardAnalyzer())
     val indexWriter = IndexWriter(indexDir, config)
-    val documentIDs = ArrayList<Int>()
 
     init {
         if (similarity != null) config.similarity = similarity

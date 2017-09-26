@@ -1,9 +1,13 @@
 package edu.unh.cs.ir.a3
 
+import edu.unh.cs.ir.data.DocumentFrequency
 import edu.unh.cs.ir.similarities.Lnc
 import edu.unh.cs.ir.similarities.Ltn
 import edu.unh.cs.ir.tools.*
+import edu.unh.cs.tools.TokenizerAnalyzer
 import edu.unh.cs.treccar.read_data.DeserializeData
+import org.apache.lucene.analysis.TokenStream
+import org.apache.lucene.analysis.standard.StandardAnalyzer
 import java.io.FileInputStream
 import java.io.FileWriter
 
@@ -41,13 +45,13 @@ fun main(args: Array<String>) {
                 TODO("Clarify what needs to be done.")
             }
         }
-    } catch (e: NoSuchFileException) {
-        System.err.println(e.stackTrace)
-        System.err.println(e.message)
-        System.err.println("Requires all arguments to be used!")
+    } catch (e: NoSuchFieldError) {
+        println("Requires all arguments to be used!")
         println("usage:")
         println("-init [paragraphFilePath] [outlinesFilePath] | to generate results")
         println("-eval [qRelFilePath] [resultsFileFromInitPath] to evaluate the results")
+        println(e.message)
+
     }
 
 }
@@ -68,10 +72,46 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     // Get pages from the CBOR file
     val pageStream = FileInputStream(args[2])
 
+    // Holds our frequencies in a table representation
+    val invertedIndex = HashMap<String, ArrayList<DocumentFrequency>>()
+
+    // Standard token and stemming rules
+    val analyzer = StandardAnalyzer()
+
+    // Document ID for the current document being indexed
+    var currentIndexDocID = 0
+
     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
+        TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
+            if (invertedIndex[token] != null) {
+                if (invertedIndex[token]!![invertedIndex[token]!!.size -1].id == currentIndexDocID.toString()) {
+                    invertedIndex[token]!![invertedIndex[token]!!.size -1].frequency += 1
+                } else {
+                    val newDocFrequency = DocumentFrequency(currentIndexDocID.toString(), 1)
+                    invertedIndex[token]?.add(newDocFrequency)
+                }
+            } else if (invertedIndex[token] == null) {
+                val newDocFrequencyList = ArrayList<DocumentFrequency>()
+                val newDocFrequency = DocumentFrequency(currentIndexDocID.toString(), 1)
+                newDocFrequencyList.add(newDocFrequency)
+                invertedIndex[token] = newDocFrequencyList
+            }
+        }
         indexer.indexParagraph(it)
         lncIndexer.indexParagraph(it)
+        currentIndexDocID++
+    }
+
+    invertedIndex.forEach { token, list ->
+        if (token == "puzzle") {
+            print("$token : ")
+            list.forEach { (id, freq) ->
+                print("($id|$freq)->")
+            }
+            print("END")
+            println()
+        }
     }
 
     // Close after we load the entries
