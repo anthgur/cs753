@@ -100,15 +100,19 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
             invertedIndex.addToIndex(token, currentIndexDocID)
         }
-        if (model == "lncltn") {
-            documentVectorsLnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
-            lncLtnIndexer.indexParagraph(it)
-        } else if (model == "bnnbnn") {
-            documentVectorsBnn.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.BNN, currentIndexDocID))
-            bnnBnnIndexer.indexParagraph(it)
-        } else if (model == "ancapc") {
-            documentVectorsAnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.ANC, currentIndexDocID))
-            ancApcIndexer.indexParagraph(it)
+        when (model) {
+            "lncltn" -> {
+                documentVectorsLnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
+                lncLtnIndexer.indexParagraph(it)
+            }
+            "bnnbnn" -> {
+                documentVectorsBnn.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.BNN, currentIndexDocID))
+                bnnBnnIndexer.indexParagraph(it)
+            }
+            "ancapc" -> {
+                documentVectorsAnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.ANC, currentIndexDocID))
+                ancApcIndexer.indexParagraph(it)
+            }
         }
         indexer.indexParagraph(it)
         currentIndexDocID++
@@ -154,7 +158,6 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
         val ancApcEngine = SearchEngine(ancApcDirectory, ancApcSim)
 
         print("Starting Lucene default results...")
-
         val topDefaultScoredDocuments = searchEngine.performQuery(query, 100)
 
         topDefaultScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
@@ -164,53 +167,52 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
                 luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
             }
         }
-
         println("Lucene default results done.")
 
-        if (model == "lncltn") {
-            print("Starting LNC.LTN results...")
+        when (model) {
+            "lncltn" -> {
+                print("Starting LNC.LTN results...")
 
-            val topLncLtnScoredDocuments = ltnLncEngine.performQuery(query, 100)
+                val topLncLtnScoredDocuments = ltnLncEngine.performQuery(query, 100)
 
-            topLncLtnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
-                if (scoreDoc.doc <= maxDocID) {
-                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
-                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                    lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
+                topLncLtnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = ltnLncEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
+                    }
                 }
+                println("LNC.LTN results done.")
             }
-            println("LNC.LTN results done.")
-        }
+            "bnnbnn" -> {
+                print("Starting BNN.BNN results...")
 
-        if (model == "bnnbnn") {
-            print("Starting BNN.BNN results...")
+                val topBnnBnnScoredDocuments = bnnBnnEngine.performQuery(query, 100)
 
-            val topBnnBnnScoredDocuments = bnnBnnEngine.performQuery(query, 100)
-
-            topBnnBnnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
-                if (scoreDoc.doc <= maxDocID) {
-                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
-                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                    bnnBnnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bnnbnn\n")
+                topBnnBnnScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = bnnBnnEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        bnnBnnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bnnbnn\n")
+                    }
                 }
+                println("BNN.BNN results done.")
             }
-            println("BNN.BNN results done.")
-        }
+            "ancapc" -> {
+                print("Starting ANC.APC results...")
 
-        if (model == "ancapc") {
-            print("Starting ANC.APC results...")
+                val topAncApcScoredDocuments = ancApcEngine.performQuery(query, 100)
 
-            val topAncApcScoredDocuments = ancApcEngine.performQuery(query, 100)
-
-            topAncApcScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
-                if (scoreDoc.doc <= maxDocID) {
-                    val doc = ltnLncEngine.getDoc(scoreDoc.doc)
-                    val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                    ancApcResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ancapc\n")
+                topAncApcScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = ancApcEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        ancApcResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ancapc\n")
+                    }
                 }
-            }
 
-            println("ANC.APC results done.")
+                println("ANC.APC results done.")
+            }
         }
 
     }
