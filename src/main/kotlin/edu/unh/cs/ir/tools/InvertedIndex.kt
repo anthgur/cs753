@@ -57,7 +57,7 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
 
     fun generateQueryVector(tokenizedQuery: ArrayList<String>, type: TFIDF_QUERY_TYPE): ArrayList<Double> {
         val queryVector = ArrayList<Double>()
-        this.forEach { term, docList ->
+        this.forEach { term, _ ->
             if (tokenizedQuery.contains(term)) {
                 when (type) {
                     TFIDF_QUERY_TYPE.LTN -> {
