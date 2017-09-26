@@ -1,6 +1,9 @@
 package edu.unh.cs.ir.tools
 
-import org.apache.lucene.index.DirectoryReader
+import org.apache.lucene.analysis.Analyzer
+import org.apache.lucene.analysis.TokenStream
+import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.index.*
 import org.apache.lucene.search.IndexSearcher
 import org.apache.lucene.search.Query
 import org.apache.lucene.search.similarities.SimilarityBase
@@ -28,7 +31,6 @@ class SearchEngine(directory: RAMDirectory, similarity: SimilarityBase? = null) 
     fun performPageQuery(query: Query, numResults: Int, metaData: List<String>, resultsFile: FileWriter) {
         indexSearcher.search(query, numResults).scoreDocs.forEachIndexed { rank, it ->
             val doc = indexSearcher.doc(it.doc)
-            indexSearcher.doc(it.doc)
             resultsFile.write("${metaData[0]}\tQ0\t${doc.get(IndexerFields.ID.toString().toLowerCase())}\t$rank\t${it.score}\t${metaData[2]}\n")
         }
     }

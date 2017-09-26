@@ -6,6 +6,7 @@ import org.apache.lucene.document.Document
 import org.apache.lucene.document.Field
 import org.apache.lucene.document.StringField
 import org.apache.lucene.document.TextField
+import org.apache.lucene.index.IndexReader
 import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.IndexWriterConfig
 import org.apache.lucene.search.similarities.SimilarityBase
@@ -33,7 +34,6 @@ class Indexer(similarity: SimilarityBase? = null) {
         doc.add(StringField(IndexerFields.ID.toString().toLowerCase(), page.pageId, Field.Store.YES))
         doc.add(StringField(IndexerFields.PAGE_NAME.toString().toLowerCase(), page.pageName, Field.Store.YES))
         indexWriter.addDocument(doc)
-
     }
 
     fun closeIndex() {
