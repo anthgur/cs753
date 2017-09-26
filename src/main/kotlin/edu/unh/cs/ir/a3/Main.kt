@@ -4,6 +4,9 @@ import edu.unh.cs.ir.tools.*
 import edu.unh.cs.tools.TokenizerAnalyzer
 import edu.unh.cs.treccar.read_data.DeserializeData
 import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.search.similarities.BasicStats
+import org.apache.lucene.search.similarities.Similarity
+import org.apache.lucene.search.similarities.SimilarityBase
 import java.io.FileInputStream
 import java.io.FileWriter
 
@@ -56,6 +59,9 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     // Create an indexer for Lucene default
     val indexer = Indexer()
 
+    // Create an index for LNC.LTN
+    val lncLtnIndexer = Indexer()
+
     // Get paragraphs from the CBOR file
     val paragraphStream = FileInputStream(args[1])
 
@@ -71,45 +77,96 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     // Document ID for the current document being indexed
     var currentIndexDocID = 0
 
+    // Document vectors
+    val documentVectors = ArrayList<ArrayList<Double>>()
+
     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
-           invertedIndex.addToIndex(token, currentIndexDocID)
+            invertedIndex.addToIndex(token, currentIndexDocID)
         }
+        documentVectors.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
         indexer.indexParagraph(it)
+        lncLtnIndexer.indexParagraph(it)
         currentIndexDocID++
     }
 
-    invertedIndex.printIndexWithLargeList(20)
 
     // Close after we load the entries
     indexer.closeIndex()
+    lncLtnIndexer.closeIndex()
 
     // Create the search engines
     val directory = indexer.indexDir
-    val searchEngine = SearchEngine(directory)
+
+    val lncLtnDirectory = lncLtnIndexer.indexDir
 
     // Page title queries
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
         val query = page.pageName
         val pageId = page.pageId.toString()
+        val tokenizedQuery = tokenizeQuery(query, analyzer)
+        val queryVector = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.LTN)
+
+        val ourSimilarity = customSimilarity(invertedIndex, documentVectors, queryVector)
+        val searchEngine = SearchEngine(directory)
+        val ltnLncEngine = SearchEngine(lncLtnDirectory, ourSimilarity)
+
         searchEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
             val doc = searchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
             luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
         }
-        searchEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
-            val doc =searchEngine.getDoc(scoreDoc.doc)
+        ltnLncEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
+            val doc = searchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
             lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
         }
-    }
 
-    searchEngine.close()
+   }
+
+
 
     luceneDefaultResults.close()
     lncLtnResults.close()
 
+}
+
+class customSimilarity(private val invertedIndex: InvertedIndex, private val documentVectors: ArrayList<ArrayList<Double>>,
+                       private val queryVector: ArrayList<Double>) : SimilarityBase() {
+    var currentDocument = 0
+
+    override fun toString(): String {
+        return "LNC.LTN Similarity"
+    }
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        val normalizedDocumentVector = invertedIndex.normalizeVector(documentVectors[currentDocument],
+                TFIDF_DOC_TYPE.LNC)
+        val normalizedQueryVector = invertedIndex.normalizeVector(queryVector,
+                TFIDF_DOC_TYPE.BNN)
+        val score = calculateInnerProduct(normalizedDocumentVector, normalizedQueryVector)
+        currentDocument++
+        return score.toFloat()
+    }
+
+}
+
+fun calculateInnerProduct(documentVectors: ArrayList<Double>, queryVector: ArrayList<Double>): Double {
+    var innerProduct = 0.0
+    assert(documentVectors.size == queryVector.size)
+    documentVectors.forEachIndexed { index, d ->
+        innerProduct += d + queryVector[index]
+    }
+    return innerProduct
+}
+
+fun tokenizeQuery(query: String, analyzer: StandardAnalyzer): ArrayList<String> {
+    val tokens = ArrayList<String>()
+    TokenizerAnalyzer.tokenizeString(analyzer, query).forEach { token ->
+        tokens.add(token)
+    }
+    return tokens
 }
 
 fun performEvaluation(resultsFile: String, qRelFile: String) {

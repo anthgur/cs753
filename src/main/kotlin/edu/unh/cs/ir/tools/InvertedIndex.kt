@@ -45,7 +45,8 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
                     documentVector.add(bValue * nValue)
                 }
                 TFIDF_DOC_TYPE.ANC -> {
-                    val aValue = doAugmented(getTermFrequency(docID, term).toDouble(), getMaxTermFrequency(docList))
+                    val aValue = doAugmented(getTermFrequency(docID, term).toDouble(),
+                            getMaxTermFrequency(docList))
                     val nValue = 1.0
                     documentVector.add(aValue * nValue)
                 }
@@ -54,7 +55,35 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
         return documentVector
     }
 
-//    fun generate
+    fun generateQueryVector(tokenizedQuery: ArrayList<String>, type: TFIDF_QUERY_TYPE): ArrayList<Double> {
+        val queryVector = ArrayList<Double>()
+        this.forEach { term, docList ->
+            if (tokenizedQuery.contains(term)) {
+                when (type) {
+                    TFIDF_QUERY_TYPE.LTN -> {
+                        val lValue = doQueryLogarithm(tokenizedQuery, term)
+                        val tValue = doInvTerm(getDocFrequency(term).toDouble())
+                        queryVector.add(lValue * tValue)
+                    }
+                    TFIDF_QUERY_TYPE.BNN -> {
+                        val bValue = doQueryBoolean(tokenizedQuery, term)
+                        val nValue = 1.0
+                        queryVector.add(bValue * nValue)
+                    }
+                    TFIDF_QUERY_TYPE.APC -> {
+                        val aValue = doQueryAugmented(tokenizedQuery, term)
+                        val pValue = doProbInvTerm(getDocFrequency(term).toDouble())
+                        queryVector.add(aValue * pValue)
+                    }
+                }
+            } else {
+                queryVector.add(0.0)
+            }
+        }
+
+
+        return queryVector
+    }
 
     fun normalizeVector(vector: ArrayList<Double>, type: TFIDF_DOC_TYPE): ArrayList<Double> {
         val normalizedVector = ArrayList<Double>()
@@ -77,11 +106,11 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
         return normalizedVector
     }
 
-    fun getNumberOfDocs() = this.size
+    private fun getNumberOfDocs() = this.size
 
-    fun getDocFrequency(token: String) = this[token]?.size ?: 0
+    private fun getDocFrequency(token: String) = this[token]?.size ?: 0
 
-    fun getTermFrequency(docID: Int, token: String): Int {
+    private fun getTermFrequency(docID: Int, token: String): Int {
         this[token]?.forEach { (id, freq) ->
             if (docID.toString() == id) {
                 return freq
@@ -128,21 +157,83 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
     }
 
     // Document TF-IDF Functions
-    fun doLogarithm(termFrequency: Double) = 1.0 + Math.log(termFrequency)
-
-    fun doBoolean(termFrequency: Double) = if (termFrequency > 0) 1 else 0
-    fun doAugmented(termFrequency: Double, maxTermFrequency: Double) = 0.5 + ((0.5 * termFrequency) / maxTermFrequency)
-
-    fun doInvTerm(documentFrequency: Double) = Math.log(getNumberOfDocs() / documentFrequency)
-    fun doProbInvTerm(documentFrequency: Double): Double {
-        return if (Math.log((getNumberOfDocs() - documentFrequency) / documentFrequency) <= 0) 0.0
-        else Math.log((getNumberOfDocs() - documentFrequency) / documentFrequency)
+    private fun doLogarithm(termFrequency: Double): Double {
+        return if (termFrequency > 0) {
+            1.0 + Math.log(termFrequency)
+        } else {
+            0.0
+        }
     }
 
-    fun doCosine(vector: ArrayList<Double>): Double {
+    private fun doBoolean(termFrequency: Double) = if (termFrequency > 0) 1 else 0
+
+    private fun doAugmented(termFrequency: Double, maxTermFrequency: Double): Double {
+        return if (termFrequency > 0 && maxTermFrequency > 0) {
+            0.5 + ((0.5 * termFrequency) / maxTermFrequency)
+        } else {
+            0.0
+        }
+    }
+
+    private fun doInvTerm(documentFrequency: Double): Double {
+        return if (documentFrequency > 0) {
+            Math.log(getNumberOfDocs() / documentFrequency)
+        } else {
+            0.0
+        }
+    }
+
+    private fun doProbInvTerm(documentFrequency: Double): Double {
+        return if (documentFrequency > 0) {
+            if (Math.log((getNumberOfDocs() - documentFrequency) / documentFrequency) <= 0) 0.0
+            else Math.log((getNumberOfDocs() - documentFrequency) / documentFrequency)
+        } else {
+            0.0
+        }
+    }
+
+    private fun doCosine(vector: ArrayList<Double>): Double {
         var sumOfSquares = 0.0
         vector.forEach { entry -> sumOfSquares += (entry * entry) }
         return 1.0 / (Math.sqrt(sumOfSquares))
+    }
+
+    // Query TF-IDF Functions
+    private fun calculateQueryFrequency(tokenizedQuery: ArrayList<String>, queryTerm: String): Double {
+        var frequency = 0.0
+        tokenizedQuery.forEach { term ->
+            if (term == queryTerm) {
+                frequency += 1.0
+            }
+        }
+        return frequency
+    }
+
+    private fun doQueryLogarithm(tokenizedQuery: ArrayList<String>, queryTerm: String): Double {
+        val termFrequency = calculateQueryFrequency(tokenizedQuery, queryTerm)
+        return if (termFrequency > 0) {
+            1.0 + Math.log(termFrequency)
+        } else {
+            0.0
+        }
+    }
+
+    private fun doQueryBoolean(tokenizedQuery: ArrayList<String>, queryTerm: String): Double {
+        val termFrequency = calculateQueryFrequency(tokenizedQuery, queryTerm)
+        return if (termFrequency > 0) {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    private fun doQueryAugmented(tokenizedQuery: ArrayList<String>, queryTerm: String): Double {
+        val termFrequency = calculateQueryFrequency(tokenizedQuery, queryTerm)
+        return if (termFrequency > 0) {
+            0.5 + ((0.5 * termFrequency) / termFrequency)
+        } else {
+            0.0
+        }
     }
 
 
