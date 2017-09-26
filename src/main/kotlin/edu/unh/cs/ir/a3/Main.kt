@@ -1,12 +1,8 @@
 package edu.unh.cs.ir.a3
 
-import edu.unh.cs.ir.data.DocumentFrequency
-import edu.unh.cs.ir.similarities.Lnc
-import edu.unh.cs.ir.similarities.Ltn
 import edu.unh.cs.ir.tools.*
 import edu.unh.cs.tools.TokenizerAnalyzer
 import edu.unh.cs.treccar.read_data.DeserializeData
-import org.apache.lucene.analysis.TokenStream
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import java.io.FileInputStream
 import java.io.FileWriter
@@ -57,14 +53,8 @@ fun main(args: Array<String>) {
 }
 
 fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter, args: Array<String>) {
-    val lncSimilarity = Lnc()
-    val ltnSimilarity = Ltn()
-
     // Create an indexer for Lucene default
     val indexer = Indexer()
-
-    // Create an indexer for LNC documents
-    val lncIndexer = Indexer(lncSimilarity)
 
     // Get paragraphs from the CBOR file
     val paragraphStream = FileInputStream(args[1])
@@ -87,7 +77,6 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
            invertedIndex.addToIndex(token, currentIndexDocID)
         }
         indexer.indexParagraph(it)
-        lncIndexer.indexParagraph(it)
         currentIndexDocID++
     }
 
@@ -95,33 +84,28 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
 
     // Close after we load the entries
     indexer.closeIndex()
-    lncIndexer.closeIndex()
 
     // Create the search engines
     val directory = indexer.indexDir
     val searchEngine = SearchEngine(directory)
 
-    // Create the LTN search engine for queries
-    val lncDirectory = lncIndexer.indexDir
-    val lncLtnSearchEngine = SearchEngine(lncDirectory, ltnSimilarity)
-
     // Page title queries
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
+        val query = page.pageName
         val pageId = page.pageId.toString()
-        searchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
+        searchEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
             val doc = searchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
             luceneDefaultResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-luceneDefault\n")
         }
-        lncLtnSearchEngine.performQuery(page.pageName, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
-            val doc = lncLtnSearchEngine.getDoc(scoreDoc.doc)
+        searchEngine.performQuery(query, 100).scoreDocs.forEachIndexed { rank, scoreDoc ->
+            val doc =searchEngine.getDoc(scoreDoc.doc)
             val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
             lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
         }
     }
 
     searchEngine.close()
-    lncLtnSearchEngine.close()
 
     luceneDefaultResults.close()
     lncLtnResults.close()

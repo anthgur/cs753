@@ -36,9 +36,15 @@ class SearchEngine(private val directory: Directory,
         }
     }
 
-    fun performQuery(rawQuery: String, numResults: Int): TopDocs {
-        val query = queryBuilder.build(rawQuery)
-        return indexSearcher.search(query, numResults)
+    fun performQuery(rawQuery: String, numResults: Int, similarity: Similarity? = null): TopDocs {
+        return if(similarity == null) {
+            val query = queryBuilder.build(rawQuery)
+            indexSearcher.search(query, numResults)
+        } else {
+            indexSearcher.setSimilarity(similarity)
+            val query = queryBuilder.build(rawQuery)
+            indexSearcher.search(query, numResults)
+        }
     }
 
     fun getDoc(id: Int): Document? {
