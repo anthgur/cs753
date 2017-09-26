@@ -13,9 +13,7 @@ fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a3 main running...")
 
     val luceneDefaultResults: FileWriter
-    val lncLtnResults: FileWriter
-    val bnnBnnResults: FileWriter
-    val ancApcResults: FileWriter
+    val customResults: FileWriter
     val resultsFile: String
     val qRelFile: String
 
@@ -28,10 +26,13 @@ fun main(args: Array<String>) {
                 println("Saving results at ${System.getProperty("user.dir")}")
                 println("Running the ${args[3]} model.")
                 luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefault.results")
-                lncLtnResults = FileWriter(System.getProperty("user.dir") + "lncLtn.results")
-                bnnBnnResults = FileWriter(System.getProperty("user.dir") + "bnnBnn.results")
-                ancApcResults = FileWriter(System.getProperty("user.dir") + "ancApc.results")
-                generateResults(luceneDefaultResults, lncLtnResults, bnnBnnResults, ancApcResults, args)
+                customResults = when {
+                    args[3] == "lncltn" -> FileWriter(System.getProperty("user.dir") + "lncLtn.results")
+                    args[3] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnn.results")
+                    args[3] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApc.results")
+                    else -> FileWriter(System.getProperty("user.dir") + "custom.results")
+                }
+                generateResults(luceneDefaultResults, customResults, args)
             }
             args[0] == "-eval" -> {
                 println("expecting first argument to be the qrels file path...")
@@ -59,8 +60,7 @@ fun main(args: Array<String>) {
 
 }
 
-fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
-                    bnnBnnResults: FileWriter, ancApcResults: FileWriter, args: Array<String>) {
+fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter, args: Array<String>) {
     // Create an indexer for Lucene default
     val indexer = Indexer()
 
@@ -179,7 +179,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
                     if (scoreDoc.doc <= maxDocID) {
                         val doc = ltnLncEngine.getDoc(scoreDoc.doc)
                         val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                        lncLtnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-lncltn\n")
                     }
                 }
                 println("LNC.LTN results done.")
@@ -193,7 +193,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
                     if (scoreDoc.doc <= maxDocID) {
                         val doc = bnnBnnEngine.getDoc(scoreDoc.doc)
                         val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                        bnnBnnResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bnnbnn\n")
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bnnbnn\n")
                     }
                 }
                 println("BNN.BNN results done.")
@@ -207,7 +207,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
                     if (scoreDoc.doc <= maxDocID) {
                         val doc = ancApcEngine.getDoc(scoreDoc.doc)
                         val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                        ancApcResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ancapc\n")
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ancapc\n")
                     }
                 }
 
@@ -218,9 +218,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
     }
 
     luceneDefaultResults.close()
-    lncLtnResults.close()
-    bnnBnnResults.close()
-    ancApcResults.close()
+    customResults.close()
 
 }
 
