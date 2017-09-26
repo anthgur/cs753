@@ -299,6 +299,10 @@ fun tokenizeQuery(query: String, analyzer: StandardAnalyzer): ArrayList<String> 
     return tokens
 }
 
+fun performRankEvaluation(resultsFile: String, lucenResultsFile: String) {
+    val evaluator = SpearmanRank(DataReader(resultsFile), DataReader(resultsFile))
+}
+
 fun performEvaluation(resultsFile: String, qRelFile: String) {
     val evaluator = Evaluator(DataReader(resultsFile), DataReader(qRelFile))
     val rPrecisionMean = evaluator.calculateRPrecision()
