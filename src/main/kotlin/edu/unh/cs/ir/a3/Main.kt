@@ -91,7 +91,7 @@ fun generateResults(luceneDefaultResults: FileWriter, lncLtnResults: FileWriter,
         currentIndexDocID++
     }
 
-    invertedIndex.printEntireIndex()
+    invertedIndex.printIndexWithLargeList(20)
 
     // Close after we load the entries
     indexer.closeIndex()
