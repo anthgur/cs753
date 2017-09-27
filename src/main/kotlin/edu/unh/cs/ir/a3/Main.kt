@@ -324,7 +324,7 @@ fun calculateInnerProduct(documentVectors: ArrayList<Double>, queryVector: Array
     var innerProduct = 0.0
     assert(documentVectors.size == queryVector.size)
     documentVectors.forEachIndexed { index, d ->
-        innerProduct += d * queryVector[index]
+        innerProduct += d + queryVector[index]
     }
     return innerProduct
 }
