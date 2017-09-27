@@ -70,7 +70,7 @@ To run the evaluations on the default Lucene scoring function, or replace the ``
 
 To run the Spearman's rank correlation, you need to provide two of the results files to compare against:
 
-```./gradlew run -Parg1="-rank" -Parg2="/aboslute/path/to/lncLtn.results" -Parg3="/absolute/path/to/cs753luceneDefault.results"```
+```./gradlew run -Parg1="-rank" -Parg2="/aboslute/path/to/cs753lncLtn.results" -Parg3="/absolute/path/to/cs753luceneDefault.results"```
 
 Finally, to be able to generate results for the sections queries for the ```lncltn``` model (these may take some time):
 
