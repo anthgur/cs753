@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
             args[0] == "-init" -> {
                 println("expecting first argument to be paragraph data file path...")
                 println("expecting second argument to be outline data file path...")
+                println("expecting third argument to be the type of TF-IDF to run...")
                 println("Initializing the results files from paragraph file ${args[1]} and outline file ${args[2]}")
                 println("Saving results at ${System.getProperty("user.dir")}")
                 println("Running the ${args[3]} model.")
@@ -51,15 +52,27 @@ fun main(args: Array<String>) {
             else -> {
                 println("expecting first argument to be paragraph data file path...")
                 println("expecting second argument to be outline data file path...")
-                println("expecting third argument to be hierarchical data file path...")
-                TODO("Clarify what needs to be done.")
+                println("expecting third argument to be the type of TF-IDF to run...")
+                println("Initializing the results files from paragraph file ${args[0]} and outline file ${args[1]}")
+                println("Saving results at ${System.getProperty("user.dir")}")
+                println("Running the ${args[2]} model.")
+                luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefault.results")
+                customResults = when {
+                    args[2] == "lncltn" -> FileWriter(System.getProperty("user.dir") + "lncLtnSection.results")
+                    args[2] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnnSection.results")
+                    args[2] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApcSection.results")
+                    else -> FileWriter(System.getProperty("user.dir") + "custom.results")
+                }
+                generateResults(luceneDefaultResults, customResults, args)
             }
         }
-    } catch (e: NoSuchFieldError) {
+    } catch (e: Exception) {
         println("Requires all arguments to be used!")
         println("usage:")
         println("-init [paragraphFilePath] [outlinesFilePath] [model] | to generate results")
         println("-eval [qRelFilePath] [resultsFileFromInitPath] | to evaluate the results")
+        println("[paragraphFilePath] [outlinesFilePath] [model] | section queries")
+        println("\t\t\t[model = lncltn | bnnbnn | ancapc]")
         println(e.message)
 
     }
@@ -146,7 +159,14 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
     // Page title queries
     DeserializeData.iterableAnnotations(pageStream).forEach { page ->
-        val query = page.pageName
+        // Normal query is the page title
+        var query = page.pageName
+
+        // Check if we're doing section headings make that the query
+        if (args.size == 3) {
+            page.childSections.forEach { query += it.heading }
+        }
+
         val pageId = page.pageId.toString()
         val tokenizedQuery = tokenizeQuery(query, analyzer)
 
