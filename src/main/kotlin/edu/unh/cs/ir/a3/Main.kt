@@ -42,6 +42,12 @@ fun main(args: Array<String>) {
                 qRelFile = args[2]
                 performEvaluation(resultsFile, qRelFile)
             }
+            args[0] == "-rank" -> {
+                println("expecting first argument to be the non-Lucene results file")
+                println("expecting second argument to be the Lucene results file")
+                println("Calculating rank of ${args[1]} and Lucene file ${args[2]}")
+                performRankEvaluation(args[1], args[2])
+            }
             else -> {
                 println("expecting first argument to be paragraph data file path...")
                 println("expecting second argument to be outline data file path...")
@@ -299,8 +305,9 @@ fun tokenizeQuery(query: String, analyzer: StandardAnalyzer): ArrayList<String> 
     return tokens
 }
 
-fun performRankEvaluation(resultsFile: String, lucenResultsFile: String) {
-    val evaluator = SpearmanRank(DataReader(resultsFile), DataReader(resultsFile))
+fun performRankEvaluation(resultsFile: String, luceneResultsFile: String) {
+    val evaluator = SpearmanRank(DataReader(resultsFile), DataReader(luceneResultsFile))
+    println("Spearman's Rank Correlation: ${evaluator.calculateRank()}")
 }
 
 fun performEvaluation(resultsFile: String, qRelFile: String) {
