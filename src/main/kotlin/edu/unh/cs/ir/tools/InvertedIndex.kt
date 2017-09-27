@@ -18,6 +18,39 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
         }
     }
 
+    fun calculateQueryFrequency(tokenizedQuery: ArrayList<String>, queryTerm: String): Double {
+        var frequency = 0.0
+        tokenizedQuery.forEach { term ->
+            if (term == queryTerm) {
+                frequency += 1.0
+            }
+        }
+        return frequency
+    }
+
+    fun getTermFrequency(docID: Int, token: String): Int {
+        this[token]?.forEach { (id, freq) ->
+            if (docID.toString() == id) {
+                return freq
+            }
+        }
+        return 0
+    }
+
+    fun getNumberOfDocs() = this.size
+
+    fun getDocFrequency(token: String) = this[token]?.size ?: 0
+
+    fun getMaxTermFrequency(list: ArrayList<DocumentFrequency>): Double {
+        var maxTermFrequency = 0.0
+        list.forEach { (_, freq) ->
+            if (maxTermFrequency < freq) {
+                maxTermFrequency = freq.toDouble()
+            }
+        }
+        return maxTermFrequency
+    }
+
     fun printIndexWithLargeList(size: Int) {
         this.forEach { token, list ->
             if (list.size >= size) {
