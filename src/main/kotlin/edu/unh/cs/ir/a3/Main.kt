@@ -56,7 +56,7 @@ fun main(args: Array<String>) {
                 println("Initializing the results files from paragraph file ${args[0]} and outline file ${args[1]}")
                 println("Saving results at ${System.getProperty("user.dir")}")
                 println("Running the ${args[2]} model.")
-                luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefault.results")
+                luceneDefaultResults = FileWriter(System.getProperty("user.dir") + "luceneDefaultSections.results")
                 customResults = when {
                     args[2] == "lncltn" -> FileWriter(System.getProperty("user.dir") + "lncLtnSection.results")
                     args[2] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnnSection.results")
@@ -93,10 +93,18 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val ancApcIndexer = Indexer()
 
     // Get paragraphs from the CBOR file
-    val paragraphStream = FileInputStream(args[1])
+    val paragraphStream : FileInputStream = if (args.size == 3) {
+        FileInputStream(args[0])
+    } else {
+        FileInputStream(args[1])
+    }
 
     // Get pages from the CBOR file
-    val pageStream = FileInputStream(args[2])
+    val pageStream : FileInputStream = if (args.size == 3) {
+        FileInputStream(args[1])
+    } else {
+        FileInputStream(args[2])
+    }
 
     // Holds our frequencies in a table representation
     val invertedIndex = InvertedIndex()
@@ -112,9 +120,13 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val documentVectorsBnn = ArrayList<ArrayList<Double>>()
     val documentVectorsAnc = ArrayList<ArrayList<Double>>()
 
-    val model = args[3]
+    val model : String = if (args.size == 3) {
+        args[2]
+    } else {
+        args[3]
+    }
 
-    // Add the paragraphs to each index
+     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
             invertedIndex.addToIndex(token, currentIndexDocID)
@@ -312,7 +324,7 @@ fun calculateInnerProduct(documentVectors: ArrayList<Double>, queryVector: Array
     var innerProduct = 0.0
     assert(documentVectors.size == queryVector.size)
     documentVectors.forEachIndexed { index, d ->
-        innerProduct += d + queryVector[index]
+        innerProduct += d * queryVector[index]
     }
     return innerProduct
 }
