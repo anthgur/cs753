@@ -179,7 +179,12 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
             page.childSections.forEach { query += it.heading }
         }
 
-        val pageId = page.pageId.toString()
+        var pageId = page.pageId.toString()
+
+        if (args.size == 3) {
+            page.childSections.forEach { pageId += "/" + it.headingId.toString() }
+        }
+
         val tokenizedQuery = tokenizeQuery(query, analyzer)
 
         val queryVectorLtn = invertedIndex.generateQueryVector(tokenizedQuery, TFIDF_QUERY_TYPE.LTN)
