@@ -14,8 +14,8 @@ class SpearmanRank(resultsDataReader: DataReader, luceneDataReader: DataReader) 
                 sumOfSpearmanRanks += calculateSpearmanRank(testDocList, luceneDocList)
             }
         }
-        println("rank: $sumOfSpearmanRanks / $numberOfQueries")
-        return sumOfSpearmanRanks / numberOfQueries
+//        println("rank: $sumOfSpearmanRanks / $numberOfQueries")
+        return 1 - (sumOfSpearmanRanks / numberOfQueries)
     }
 
     private fun calculateSpearmanRank(testDocList: ArrayList<resultsDataEntry>,
@@ -25,7 +25,7 @@ class SpearmanRank(resultsDataReader: DataReader, luceneDataReader: DataReader) 
             sumOfDistances += calculateDistance(index.toDouble(), resultsDataEntry, testDocList)
         }
         val n = Math.max(testDocList.size, luceneDocList.size)
-        println("spearman: 6 * $sumOfDistances / ($n * (($n * $n) - 1))")
+//        println("spearman: 6 * $sumOfDistances / ($n * (($n * $n) - 1))")
         return if (n > 1) {
             (6.0 * sumOfDistances) / (n * ((n * n) - 1.0))
         } else {
