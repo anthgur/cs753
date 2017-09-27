@@ -77,3 +77,5 @@ Finally, to be able to generate results for the sections queries for the ```lncl
 ```./gradlew run -Parg1="/aboslute/path/to/train.test200.cbor.paragraph" -Parg2="/absolute/path/to/train.test200.cbor.outlines" -Parg3="lncltn"``` 
 
 This generates a file in the parent (```../```) directory that you can run ```eval``` on, they will be called ```cs753NameOfModelSections.results```
+
+# a4
