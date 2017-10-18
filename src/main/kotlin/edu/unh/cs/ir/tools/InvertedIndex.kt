@@ -110,7 +110,7 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
 
     private fun getDocFrequency(token: String) = this[token]?.size ?: 0
 
-    private fun getTermFrequency(docID: Int, token: String): Int {
+    fun getTermFrequency(docID: Int, token: String): Int {
         this[token]?.forEach { (id, freq) ->
             if (docID.toString() == id) {
                 return freq

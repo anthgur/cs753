@@ -31,6 +31,7 @@ fun main(args: Array<String>) {
                     args[3] == "lncltn" -> FileWriter(System.getProperty("user.dir") + "lncLtn.results")
                     args[3] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnn.results")
                     args[3] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApc.results")
+                    args[3] == "ul" -> FileWriter(System.getProperty("user.dir") + "ul.results")
                     else -> FileWriter(System.getProperty("user.dir") + "custom.results")
                 }
                 generateResults(luceneDefaultResults, customResults, args)
@@ -61,6 +62,7 @@ fun main(args: Array<String>) {
                     args[2] == "lncltn" -> FileWriter(System.getProperty("user.dir") + "lncLtnSection.results")
                     args[2] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnnSection.results")
                     args[2] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApcSection.results")
+                    args[2] == "ul" -> FileWriter(System.getProperty("user.dir") + "ul.results")
                     else -> FileWriter(System.getProperty("user.dir") + "custom.results")
                 }
                 generateResults(luceneDefaultResults, customResults, args)
@@ -91,6 +93,9 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
     // Create an index for ANC.APC
     val ancApcIndexer = Indexer()
+
+    // Create an index for ANC.APC
+    val uLIndexer = Indexer()
 
     // Get paragraphs from the CBOR file
     val paragraphStream : FileInputStream = if (args.size == 3) {
@@ -146,6 +151,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
             }
         }
         indexer.indexParagraph(it)
+        uLIndexer.indexParagraph(it)
         currentIndexDocID++
     }
 
@@ -157,6 +163,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     lncLtnIndexer.closeIndex()
     bnnBnnIndexer.closeIndex()
     ancApcIndexer.closeIndex()
+    uLIndexer.closeIndex()
 
     // Create the search engines
     val directory = indexer.indexDir
@@ -164,6 +171,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val lncLtnDirectory = lncLtnIndexer.indexDir
     val bnnBnnDirectory = bnnBnnIndexer.indexDir
     val ancApcDirectory = ancApcIndexer.indexDir
+    val uLDirectory = uLIndexer.indexDir
 
 //    println(currentIndexDocID)
 
@@ -194,11 +202,13 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val lncLtnSim = lncLtnSimilarity(invertedIndex, documentVectorsLnc, queryVectorLtn)
         val bnnBnnSim = bnnBnnSimilarity(invertedIndex, documentVectorsBnn, queryVectorBnn)
         val ancApcSim = ancApcSimilarity(invertedIndex, documentVectorsAnc, queryVectorApc)
+        val uLSim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery)
 
         val searchEngine = SearchEngine(directory)
         val ltnLncEngine = SearchEngine(lncLtnDirectory, lncLtnSim)
         val bnnBnnEngine = SearchEngine(bnnBnnDirectory, bnnBnnSim)
         val ancApcEngine = SearchEngine(ancApcDirectory, ancApcSim)
+        val uLEngine = SearchEngine(uLDirectory, uLSim)
 
         print("Starting Lucene default results...")
         val topDefaultScoredDocuments = searchEngine.performQuery(query, 100)
@@ -256,12 +266,54 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
                 println("ANC.APC results done.")
             }
+            "ul" -> {
+                print("Starting Unigram Laplace results...")
+
+                val topULScoredDocuments = uLEngine.performQuery(query, 100)
+
+                topULScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = uLEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ul\n")
+                    }
+                }
+
+                println("Unigram Laplace results done.")
+            }
         }
 
     }
 
     luceneDefaultResults.close()
     customResults.close()
+
+}
+
+class unigramLaplaceSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>)
+    : SimilarityBase() {
+    private var currentDocument = 0
+
+    override fun toString(): String {
+        return "U-L Similarity"
+    }
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        var score = 1.0
+
+        // Have to compute each query term P on a per document basis anyhow, so do that shit here
+        tokenizedQuery.forEachIndexed { _, s ->
+            // sum of query term freqs in d
+            var sum = 0
+            tokenizedQuery.forEachIndexed { _, s -> sum += invertedIndex.getTermFrequency(currentDocument, s) }
+            val probTD = ((invertedIndex.getTermFrequency(currentDocument, s) + 1).toFloat() / (sum + tokenizedQuery.size).toFloat())
+
+            score *= probTD
+        }
+
+        currentDocument++
+        return score.toFloat()
+    }
 
 }
 
