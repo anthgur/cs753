@@ -128,6 +128,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val documentVectorsLnc = ArrayList<ArrayList<Double>>()
     val documentVectorsBnn = ArrayList<ArrayList<Double>>()
     val documentVectorsAnc = ArrayList<ArrayList<Double>>()
+    val documentVectorsUL = ArrayList<ArrayList<Double>>()
     val documentVectorsUJM = ArrayList<ArrayList<Double>>()
 
     val model : String = if (args.size == 3) {
@@ -157,6 +158,8 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
                 ancApcIndexer.indexParagraph(it)
             }
             "ul" -> {
+
+                documentVectorsUL.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
                 uLIndexer.indexParagraph(it)
             }
             "ujm" -> {
@@ -164,7 +167,6 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
                 uJMIndexer.indexParagraph(it)
             }
         }
-        print("@")
         indexer.indexParagraph(it)
         currentIndexDocID++
     }
@@ -220,7 +222,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val lncLtnSim = lncLtnSimilarity(invertedIndex, documentVectorsLnc, queryVectorLtn)
         val bnnBnnSim = bnnBnnSimilarity(invertedIndex, documentVectorsBnn, queryVectorBnn)
         val ancApcSim = ancApcSimilarity(invertedIndex, documentVectorsAnc, queryVectorApc)
-        val uLSim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery)
+        val uLSim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectorsUL)
         val uJMSim = unigramJelinekMercerSimilarity(invertedIndex, tokenizedQuery, documentVectorsUJM, totalDocs = currentIndexDocID.toDouble())
 
         val searchEngine = SearchEngine(directory)
@@ -310,7 +312,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
                     if (scoreDoc.doc <= maxDocID) {
                         val doc = uJMEngine.getDoc(scoreDoc.doc)
                         val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
-                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ul\n")
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-ujm\n")
                     }
                 }
 
@@ -325,8 +327,8 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
 }
 
-class unigramLaplaceSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>)
-    : SimilarityBase() {
+class unigramLaplaceSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>,
+                               private val documentVector: ArrayList<ArrayList<Double>>) : SimilarityBase() {
     private var currentDocument = 0
 
     override fun toString(): String = "U-L Similarity"
@@ -337,9 +339,9 @@ class unigramLaplaceSimilarity(private val invertedIndex: InvertedIndex, private
         // Have to compute each query term P on a per document basis anyhow, so do that shit here
         tokenizedQuery.forEachIndexed { _, s ->
             // sum of query term freqs in d
-            var sum = 0
-            tokenizedQuery.forEachIndexed { _, token -> sum += invertedIndex.getTermFrequency(currentDocument, token) }
-            val probTD = ((invertedIndex.getTermFrequency(currentDocument, s) + 1).toFloat() / (sum + tokenizedQuery.size).toFloat())
+            var sum = 0.0
+            documentVector[currentDocument].forEachIndexed { _, frequency -> sum += frequency }
+            val probTD = ((invertedIndex.getTermFrequency(currentDocument, s) + 1).toFloat() / (sum + invertedIndex.size).toFloat())
 
             score *= probTD
         }
