@@ -19,7 +19,7 @@ buildscript {
 if (project.hasProperty("mainClass")){
     mainClassName = mainClass
 } else {
-    mainClassName = "edu.unh.cs.ir.a3.MainKt"
+    mainClassName = "edu.unh.cs.ir.a4.MainKt"
 }
 
 sourceSets {

@@ -50,6 +50,9 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
                     val nValue = 1.0
                     documentVector.add(aValue * nValue)
                 }
+                else -> {
+                    documentVector.add(getTermFrequency(docID, term).toDouble())
+                }
             }
         }
         return documentVector
@@ -102,6 +105,11 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
                     normalizedVector.add(entry * normalizationFactor)
                 }
             }
+            else -> {
+                vector.forEachIndexed{ _, entry ->
+                    normalizedVector.add(entry)
+                }
+            }
         }
         return normalizedVector
     }
@@ -109,6 +117,15 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
     private fun getNumberOfDocs() = this.size
 
     private fun getDocFrequency(token: String) = this[token]?.size ?: 0
+
+    fun getDocSize(token: String): Int {
+        return try{
+            this[token]!!.size
+        } catch (e: NullPointerException) {
+            0
+        }
+    }
+
 
     fun getTermFrequency(docID: Int, token: String): Int {
         this[token]?.forEach { (id, freq) ->
@@ -240,7 +257,7 @@ class InvertedIndex : HashMap<String, ArrayList<DocumentFrequency>>() {
 }
 
 enum class TFIDF_DOC_TYPE {
-    LNC, BNN, ANC
+    LNC, BNN, ANC, OTHER
 }
 
 enum class TFIDF_QUERY_TYPE {
