@@ -104,6 +104,9 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     // Create an index for U-JM
     val uJMIndexer = Indexer()
 
+    // Create an index for U-DS
+    val uDSIndexer = Indexer()
+
     // Create an index for B-L
     val bLIndexer = Indexer()
 
@@ -139,6 +142,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val documentVectorsAnc = ArrayList<ArrayList<Double>>()
     val documentVectorsUL = ArrayList<ArrayList<Double>>()
     val documentVectorsUJM = ArrayList<ArrayList<Double>>()
+    val documentVectorsUDS = ArrayList<ArrayList<Double>>()
     val documentVectorsBL = ArrayList<ArrayList<Double>>()
 
     val model : String = if (args.size == 3) {
@@ -181,6 +185,10 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
                 documentVectorsUJM.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
                 uJMIndexer.indexParagraph(it)
             }
+            "uds" -> {
+                documentVectorsUDS.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
+                uDSIndexer.indexParagraph(it)
+            }
             "bl" -> {
                 documentVectorsBL.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
                 bLIndexer.indexParagraph(it)
@@ -201,6 +209,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     ancApcIndexer.closeIndex()
     uLIndexer.closeIndex()
     uJMIndexer.closeIndex()
+    uDSIndexer.closeIndex()
     bLIndexer.closeIndex()
 
     // Create the search engines
@@ -211,6 +220,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val ancApcDirectory = ancApcIndexer.indexDir
     val uLDirectory = uLIndexer.indexDir
     val uJMDirectory = uJMIndexer.indexDir
+    val uDSDirectory = uDSIndexer.indexDir
     val bLDirectory = bLIndexer.indexDir
 
 //    println(currentIndexDocID)
@@ -245,6 +255,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val ancApcSim = ancApcSimilarity(invertedIndex, documentVectorsAnc, queryVectorApc)
         val uLSim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectorsUL)
         val uJMSim = unigramJelinekMercerSimilarity(invertedIndex, tokenizedQuery, documentVectorsUJM, totalDocs = currentIndexDocID.toDouble())
+        val uDSSim = unigramDirichletSimilarity(invertedIndex, tokenizedQuery, documentVectorsUDS)
         val bLSim = bigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectorsBL, bigramIndex)
 
         val searchEngine = SearchEngine(directory)
@@ -253,6 +264,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val ancApcEngine = SearchEngine(ancApcDirectory, ancApcSim)
         val uLEngine = SearchEngine(uLDirectory, uLSim)
         val uJMEngine = SearchEngine(uJMDirectory, uJMSim)
+        val uDSEngine = SearchEngine(uDSDirectory, uDSSim)
         val bLEngine = SearchEngine(bLDirectory, bLSim)
 
         print("Starting Lucene default results...")
@@ -341,6 +353,21 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
                 println("Unigram Jelinek Mercer results done.")
             }
+            "uds" -> {
+                print("Starting Unigram Dirichlet results...")
+
+                val topUDSScoredDocuments = uDSEngine.performQuery(query, 100)
+
+                topUDSScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = uDSEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-uds\n")
+                    }
+                }
+
+                println("Unigram Dirichlet results done.")
+            }
             "bl" -> {
                 print("Starting Bigram Laplace results...")
 
@@ -362,6 +389,30 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
     luceneDefaultResults.close()
     customResults.close()
+
+}
+
+class unigramDirichletSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>,
+                                 private val documentVector: ArrayList<ArrayList<Double>>) : SimilarityBase() {
+    private var currentDocument = 0
+    private var mu = 1000
+
+    override fun toString(): String = "U-DS Similarity"
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        var score = 1.0
+
+        tokenizedQuery.forEach { term ->
+            var sum = 0.0
+            documentVector[currentDocument].forEach { sum += it }
+            val termFreq = invertedIndex.getTermFrequency(currentDocument, term)
+            val pt = termFreq / invertedIndex.getDocSize(term).toDouble()
+            score *= (termFreq + mu * pt) / (sum + mu)
+        }
+
+        currentDocument++
+        return score.toFloat()
+    }
 
 }
 
