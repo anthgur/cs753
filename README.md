@@ -79,3 +79,24 @@ Finally, to be able to generate results for the sections queries for the ```lncl
 This generates a file in the parent (```../```) directory that you can run ```eval``` on, they will be called ```cs753NameOfModelSections.results```
 
 # a4
+ 
+Language Models with Smoothing
+
+The default main class for this assignment is ```edu.unh.cs.ir.a4.MainKt```
+
+There are three modes you can run our assignment in they are ```-init```, ```-eval```
+
+The ```init``` mode generates the results files in the parent (```../```) directory that you run the code from, they will be called ```cs753NameOfModel.results```
+
+Once these files are generated you can then run the ```eval``` mode to run the evaluation measures: RPrecision, MAP, and NDCG@20
+
+In contrast to the previous assignment you also need to supply a model type: ```ul```, ```ujm```, ```uds```, or ```bl```the Lucene model always runs
+
+For example, to generate the results files for ```ul```:
+
+```./gradlew run -Parg1="-init" -Parg2="/absolute/path/to/train.test200.cbor.paragraph" -Parg3="/absolute/path/to/train.test200.cbor.outlines" -Parg4="ul" ```
+
+To run the evaluations on the default Lucene scoring function, or replace the ```.results``` file with the model of your choice:
+
+```./gradlew run -Parg1="-eval" -Parg2="/aboslute/path/to/train.test200.cbor.article.qrels" -Parg3="/absolute/path/to/cs753luceneDefault.results"```
+
