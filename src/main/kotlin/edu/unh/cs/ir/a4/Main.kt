@@ -33,6 +33,7 @@ fun main(args: Array<String>) {
                     args[3] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApc.results")
                     args[3] == "ul" -> FileWriter(System.getProperty("user.dir") + "ul.results")
                     args[3] == "ujm" -> FileWriter(System.getProperty("user.dir") + "ujm.results")
+                    args[3] == "uds" -> FileWriter(System.getProperty("user.dir") + "uds.results")
                     args[3] == "bl" -> FileWriter(System.getProperty("user.dir") + "bl.results")
                     else -> FileWriter(System.getProperty("user.dir") + "custom.results")
                 }
@@ -407,7 +408,10 @@ class unigramDirichletSimilarity(private val invertedIndex: InvertedIndex, priva
             documentVector[currentDocument].forEach { sum += it }
             val termFreq = invertedIndex.getTermFrequency(currentDocument, term)
             val pt = termFreq / invertedIndex.getDocSize(term).toDouble()
-            score *= (termFreq + mu * pt) / (sum + mu)
+            val prob = (termFreq + mu * pt) / (sum + mu)
+            if (prob != 0.0) {
+                score *= prob
+            }
         }
 
         currentDocument++
