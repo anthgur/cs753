@@ -33,6 +33,7 @@ fun main(args: Array<String>) {
                     args[3] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApc.results")
                     args[3] == "ul" -> FileWriter(System.getProperty("user.dir") + "ul.results")
                     args[3] == "ujm" -> FileWriter(System.getProperty("user.dir") + "ujm.results")
+                    args[3] == "bl" -> FileWriter(System.getProperty("user.dir") + "bl.results")
                     else -> FileWriter(System.getProperty("user.dir") + "custom.results")
                 }
                 generateResults(luceneDefaultResults, customResults, args)
@@ -64,6 +65,8 @@ fun main(args: Array<String>) {
                     args[2] == "bnnbnn" -> FileWriter(System.getProperty("user.dir") + "bnnBnnSection.results")
                     args[2] == "ancapc" -> FileWriter(System.getProperty("user.dir") + "ancApcSection.results")
                     args[2] == "ul" -> FileWriter(System.getProperty("user.dir") + "ul.results")
+                    args[3] == "ujm" -> FileWriter(System.getProperty("user.dir") + "ujm.results")
+                    args[3] == "bl" -> FileWriter(System.getProperty("user.dir") + "bl.results")
                     else -> FileWriter(System.getProperty("user.dir") + "custom.results")
                 }
                 generateResults(luceneDefaultResults, customResults, args)
@@ -101,6 +104,9 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     // Create an index for U-JM
     val uJMIndexer = Indexer()
 
+    // Create an index for B-L
+    val bLIndexer = Indexer()
+
     // Get paragraphs from the CBOR file
     val paragraphStream : FileInputStream = if (args.size == 3) {
         FileInputStream(args[0])
@@ -118,6 +124,9 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     // Holds our frequencies in a table representation
     val invertedIndex = InvertedIndex()
 
+    // Holds bigram info
+    val bigramIndex = BigramIndex()
+
     // Standard token and stemming rules
     val analyzer = StandardAnalyzer()
 
@@ -130,6 +139,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val documentVectorsAnc = ArrayList<ArrayList<Double>>()
     val documentVectorsUL = ArrayList<ArrayList<Double>>()
     val documentVectorsUJM = ArrayList<ArrayList<Double>>()
+    val documentVectorsBL = ArrayList<ArrayList<Double>>()
 
     val model : String = if (args.size == 3) {
         args[2]
@@ -141,9 +151,14 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
     // Add the paragraphs to each index
     DeserializeData.iterableParagraphs(paragraphStream).forEach {
+        var lastToken = ""
         TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
             invertedIndex.addToIndex(token, currentIndexDocID)
+            if (lastToken != "")
+                bigramIndex.addToIndex(currentIndexDocID, token, lastToken)
+            lastToken = token
         }
+
         when (model) {
             "lncltn" -> {
                 documentVectorsLnc.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.LNC, currentIndexDocID))
@@ -166,6 +181,10 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
                 documentVectorsUJM.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
                 uJMIndexer.indexParagraph(it)
             }
+            "bl" -> {
+                documentVectorsBL.add(invertedIndex.generateDocumentVector(TFIDF_DOC_TYPE.OTHER, currentIndexDocID))
+                bLIndexer.indexParagraph(it)
+            }
         }
         indexer.indexParagraph(it)
         currentIndexDocID++
@@ -182,6 +201,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     ancApcIndexer.closeIndex()
     uLIndexer.closeIndex()
     uJMIndexer.closeIndex()
+    bLIndexer.closeIndex()
 
     // Create the search engines
     val directory = indexer.indexDir
@@ -191,6 +211,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
     val ancApcDirectory = ancApcIndexer.indexDir
     val uLDirectory = uLIndexer.indexDir
     val uJMDirectory = uJMIndexer.indexDir
+    val bLDirectory = bLIndexer.indexDir
 
 //    println(currentIndexDocID)
 
@@ -224,6 +245,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val ancApcSim = ancApcSimilarity(invertedIndex, documentVectorsAnc, queryVectorApc)
         val uLSim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectorsUL)
         val uJMSim = unigramJelinekMercerSimilarity(invertedIndex, tokenizedQuery, documentVectorsUJM, totalDocs = currentIndexDocID.toDouble())
+        val bLSim = bigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectorsBL, bigramIndex)
 
         val searchEngine = SearchEngine(directory)
         val ltnLncEngine = SearchEngine(lncLtnDirectory, lncLtnSim)
@@ -231,6 +253,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
         val ancApcEngine = SearchEngine(ancApcDirectory, ancApcSim)
         val uLEngine = SearchEngine(uLDirectory, uLSim)
         val uJMEngine = SearchEngine(uJMDirectory, uJMSim)
+        val bLEngine = SearchEngine(bLDirectory, bLSim)
 
         print("Starting Lucene default results...")
         val topDefaultScoredDocuments = searchEngine.performQuery(query, 100)
@@ -318,6 +341,21 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
                 println("Unigram Jelinek Mercer results done.")
             }
+            "bl" -> {
+                print("Starting Bigram Laplace results...")
+
+                val topBLScoredDocuments = bLEngine.performQuery(query, 100)
+
+                topBLScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+                    if (scoreDoc.doc <= maxDocID) {
+                        val doc = bLEngine.getDoc(scoreDoc.doc)
+                        val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                        customResults.write("$pageId\tQ0\t$docId\t$rank\t${scoreDoc.score}\tteam7-bl\n")
+                    }
+                }
+
+                println("Bigram Laplace results done.")
+            }
         }
 
     }
@@ -375,6 +413,45 @@ class unigramJelinekMercerSimilarity(private val invertedIndex: InvertedIndex, p
     }
 
     override fun toString(): String = "U-JM Similarity"
+
+}
+
+class bigramLaplaceSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>,
+                               private val documentVector: ArrayList<ArrayList<Double>>, private val bigramIndex: BigramIndex)
+                             : SimilarityBase() {
+    private var currentDocument = 0
+
+    override fun toString(): String = "B-L Similarity"
+
+    override fun score(stats: BasicStats?, freq: Float, docLen: Float): Float {
+        var score = 1.0
+
+        // Have to compute each query term P on a per document basis anyhow, so do that shit here
+        var lastTerm = ""
+        tokenizedQuery.forEachIndexed { _, s ->
+            // sum of query term freqs in d
+            var sum = 0.0
+            // calculate prob of bigram
+            var bigramProb = 0.0
+            if (lastTerm == "")
+            {
+                lastTerm = s
+                bigramProb = invertedIndex.getTermFrequency(currentDocument, s).toDouble()
+            }
+            else
+            {
+                bigramProb = bigramIndex.getFrequency(currentDocument, s, lastTerm).toDouble()
+                lastTerm = s
+            }
+            documentVector[currentDocument].forEachIndexed { _, frequency -> sum += frequency }
+            val probTD = ((bigramProb + 1).toFloat() / (sum + invertedIndex.size).toFloat())
+
+            score *= probTD
+        }
+
+        currentDocument++
+        return score.toFloat()
+    }
 
 }
 
