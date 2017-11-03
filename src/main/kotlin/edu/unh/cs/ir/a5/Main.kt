@@ -8,6 +8,7 @@ import org.apache.lucene.search.similarities.BasicStats
 import org.apache.lucene.search.similarities.SimilarityBase
 import java.io.FileInputStream
 import java.io.FileWriter
+import javax.print.DocFlavor
 
 fun main(args: Array<String>) {
     println("edu.unh.cs.ir.a4 main running...")
@@ -54,14 +55,16 @@ fun main(args: Array<String>) {
                 performRankEvaluation(args[1], args[2])
             }
             args[0] == "-learnAllRankings" -> {
-                println("expecting first argument to be the qrels file path...")
-                println("expecting the second argument to be the results file path...")
+                println("expecting first argument to be the paragraph data file path...")
+                println("expecting the second argument to be the outline data file path...")
+                println("expecting third argument to be the qrels file path...")
                 generateResults(args)
             }
             args[0] == "-learnSingleQuery" -> {
                 println("expecting first argument to be query")
-                println("expecting second argument to be the qrels file path...")
-                generateResults(args[1], args[2])
+                println("expecting second argument to be the paragraph data file path...")
+                println("expecting third argument to be the qrels file path...")
+                generateResults(args[1], args[2], args[3])
             }
             else -> {
                 println("expecting first argument to be paragraph data file path...")
@@ -403,7 +406,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
 }
 
-fun generateResults(query: String, paragraphFile: String) {
+fun generateResults(query: String, paragraphFile: String, qrelFile: String) {
 
     val rankMethods = ArrayList<String>()
     rankMethods.add("lncltn")
@@ -426,7 +429,7 @@ fun generateResults(query: String, paragraphFile: String) {
     // Standard token and stemming rules
     val analyzer = StandardAnalyzer()
 
-    val featureVectors = HashMap<Int, HashMap<Int, FeatureVector>>()
+    val featureVectors = HashMap<String, HashMap<String, FeatureVector>>()
 
     // Add the paragraphs to each index
     rankMethods.forEachIndexed { _, model ->
@@ -510,57 +513,57 @@ fun generateResults(query: String, paragraphFile: String) {
                 val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
                 when (model) {
                     "lncltn" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.lncltnScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.lncltnScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "bnnbnn" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.bnnbnnScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.bnnbnnScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "ancapc" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.ancapcScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.ancapcScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "ul" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.ulScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.ulScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "ujm" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.ujmScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.ujmScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "uds" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.udsScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.udsScore = 1.0/(rank.toDouble() + 1.0)
                     }
                     "bl" -> {
-                        if (featureVectors[scoreDoc.doc] == null)
-                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                        featureVectors[scoreDoc.doc]!![currentqID]!!.blScore = 1.0/(rank.toDouble() + 1.0)
+                        if (featureVectors[docId!!] == null)
+                            featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                        if (featureVectors[docId!!]!![query] == null)
+                            featureVectors[docId!!]!![query] = FeatureVector()
+                        featureVectors[docId!!]!![query]!!.blScore = 1.0/(rank.toDouble() + 1.0)
                     }
                 }
-                featureVectors[scoreDoc.doc]!![currentqID]!!.documentID = docId!!
-                featureVectors[scoreDoc.doc]!![currentqID]!!.queryID = currentqID
+                featureVectors[docId!!]!![query]!!.documentID = docId!!
+                featureVectors[docId!!]!![query]!!.queryID = currentqID
             }
         }
 
@@ -572,6 +575,17 @@ fun generateResults(query: String, paragraphFile: String) {
 
         // Get paragraphs from the CBOR file
         paragraphStream = FileInputStream(paragraphFile)
+    }
+
+
+    val relevancyTable = DataReader(qrelFile).readQRelFile()
+
+    relevancyTable.forEach { queryid, data ->
+        data.forEachIndexed { index, qRelDataEntry ->
+            if (featureVectors[qRelDataEntry.docID] != null)
+                if (featureVectors[qRelDataEntry.docID]!![queryid] != null)
+                    featureVectors[qRelDataEntry.docID]!![queryid]!!.relevant = if (qRelDataEntry.isRelevant) { 1 } else 0
+        }
     }
 
     featureVectors.forEach { docid, queryList ->
@@ -595,14 +609,14 @@ fun generateResults(args: Array<String>) {
     rankMethods.add("bl")
 
     // Get paragraphs from the CBOR file
-    var paragraphStream : FileInputStream = if (args.size == 3) {
+    var paragraphStream : FileInputStream = if (args.size == 4) {
         FileInputStream(args[1])
     } else {
         FileInputStream(args[2])
     }
 
     // Get pages from the CBOR file
-    var pageStream : FileInputStream = if (args.size == 3) {
+    var pageStream : FileInputStream = if (args.size == 4) {
         FileInputStream(args[2])
     } else {
         FileInputStream(args[3])
@@ -617,7 +631,7 @@ fun generateResults(args: Array<String>) {
     // Standard token and stemming rules
     val analyzer = StandardAnalyzer()
 
-    val featureVectors = HashMap<Int, HashMap<Int, FeatureVector>>()
+    val featureVectors = HashMap<String, HashMap<String, FeatureVector>>()
 
     // Add the paragraphs to each index
     rankMethods.forEachIndexed { _, model ->
@@ -668,13 +682,13 @@ fun generateResults(args: Array<String>) {
             var query = page.pageName
 
             // Check if we're doing section headings make that the query
-            if (args.size == 4) {
+            if (args.size == 5) {
                 page.childSections.forEach { query += it.heading }
             }
 
             var pageId = page.pageId.toString()
 
-            if (args.size == 4) {
+            if (args.size == 5) {
                 page.childSections.forEach { pageId += "/" + it.headingId.toString() }
             }
 
@@ -716,57 +730,57 @@ fun generateResults(args: Array<String>) {
                     val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
                     when (model) {
                         "lncltn" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.lncltnScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.lncltnScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "bnnbnn" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.bnnbnnScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.bnnbnnScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "ancapc" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.ancapcScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.ancapcScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "ul" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.ulScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.ulScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "ujm" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.ujmScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.ujmScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "uds" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.udsScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.udsScore = 1.0/(rank.toDouble() + 1.0)
                         }
                         "bl" -> {
-                            if (featureVectors[scoreDoc.doc] == null)
-                                featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
-                            if (featureVectors[scoreDoc.doc]!![currentqID] == null)
-                                featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
-                            featureVectors[scoreDoc.doc]!![currentqID]!!.blScore = 1.0/(rank.toDouble() + 1.0)
+                            if (featureVectors[docId!!] == null)
+                                featureVectors[docId!!] = HashMap<String, FeatureVector>()
+                            if (featureVectors[docId!!]!![query] == null)
+                                featureVectors[docId!!]!![query] = FeatureVector()
+                            featureVectors[docId!!]!![query]!!.blScore = 1.0/(rank.toDouble() + 1.0)
                         }
                     }
-                    featureVectors[scoreDoc.doc]!![currentqID]!!.documentID = docId!!
-                    featureVectors[scoreDoc.doc]!![currentqID]!!.queryID = currentqID
+                    featureVectors[docId!!]!![query]!!.documentID = docId!!
+                    featureVectors[docId!!]!![query]!!.queryID = currentqID
                 }
             }
             currentqID++
@@ -778,17 +792,27 @@ fun generateResults(args: Array<String>) {
         bigramIndex.clear()
 
         // Get paragraphs from the CBOR file
-        paragraphStream = if (args.size == 3) {
+        paragraphStream = if (args.size == 4) {
             FileInputStream(args[1])
         } else {
             FileInputStream(args[2])
         }
 
         // Get pages from the CBOR file
-        pageStream = if (args.size == 3) {
+        pageStream = if (args.size == 4) {
             FileInputStream(args[2])
         } else {
             FileInputStream(args[3])
+        }
+    }
+
+    val relevancyTable = DataReader(args[3]).readQRelFile()
+
+    relevancyTable.forEach { queryid, data ->
+        data.forEachIndexed { index, qRelDataEntry ->
+            if (featureVectors[qRelDataEntry.docID] != null)
+                if (featureVectors[qRelDataEntry.docID]!![queryid] != null)
+                    featureVectors[qRelDataEntry.docID]!![queryid]!!.relevant = if (qRelDataEntry.isRelevant) { 1 } else 0
         }
     }
 
