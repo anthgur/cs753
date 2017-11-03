@@ -15,6 +15,7 @@ fun main(args: Array<String>) {
 
     val luceneDefaultResults: FileWriter
     val customResults: FileWriter
+    val trainingWriter: FileWriter
     val resultsFile: String
     val qRelFile: String
 
@@ -58,13 +59,15 @@ fun main(args: Array<String>) {
                 println("expecting first argument to be the paragraph data file path...")
                 println("expecting the second argument to be the outline data file path...")
                 println("expecting third argument to be the qrels file path...")
-                generateResults(args)
+                trainingWriter = FileWriter(System.getProperty("user.dir") + "allqueries.txt")
+                generateResults(args, trainingWriter)
             }
             args[0] == "-learnSingleQuery" -> {
                 println("expecting first argument to be query")
                 println("expecting second argument to be the paragraph data file path...")
                 println("expecting third argument to be the qrels file path...")
-                generateResults(args[1], args[2], args[3])
+                trainingWriter = FileWriter(System.getProperty("user.dir") + "singlequery.txt")
+                generateResults(args[1], args[2], args[3], trainingWriter)
             }
             else -> {
                 println("expecting first argument to be paragraph data file path...")
@@ -406,7 +409,7 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
 }
 
-fun generateResults(query: String, paragraphFile: String, qrelFile: String) {
+fun generateResults(query: String, paragraphFile: String, qrelFile: String, trainingWriter: FileWriter) {
 
     val rankMethods = ArrayList<String>()
     rankMethods.add("lncltn")
@@ -590,14 +593,14 @@ fun generateResults(query: String, paragraphFile: String, qrelFile: String) {
 
     featureVectors.forEach { docid, queryList ->
         queryList.forEach { queryid, featureVec ->
-            println("rel: " + featureVec.relevant + " qid: " + featureVec.queryID + " f0: " + featureVec.lncltnScore + " f1: " + featureVec.bnnbnnScore
-                    + " f2: " + featureVec.ancapcScore + " f3: " + featureVec.ulScore + " f4: " + featureVec.ujmScore + " f5: " + featureVec.udsScore + " f6: " + featureVec.blScore +
-                    " # " + featureVec.documentID)
+            trainingWriter.write("" + featureVec.relevant + " qid:" + featureVec.queryID + " 1:" + featureVec.lncltnScore + " 2:" + featureVec.bnnbnnScore
+                    + " 3:" + featureVec.ulScore + " 4:" + featureVec.ujmScore + " 5:" + featureVec.udsScore + " # " + featureVec.documentID + "\n")
         }
     }
+    trainingWriter.close()
 }
 
-fun generateResults(args: Array<String>) {
+fun generateResults(args: Array<String>, trainingWriter: FileWriter) {
 
     val rankMethods = ArrayList<String>()
     rankMethods.add("lncltn")
@@ -818,11 +821,11 @@ fun generateResults(args: Array<String>) {
 
     featureVectors.forEach { docid, queryList ->
         queryList.forEach { queryid, featureVec ->
-            println("rel: " + featureVec.relevant + " qid: " + featureVec.queryID + " f0: " + featureVec.lncltnScore + " f1: " + featureVec.bnnbnnScore
-            + " f2: " + featureVec.ancapcScore + " f3: " + featureVec.ulScore + " f4: " + featureVec.ujmScore + " f5: " + featureVec.udsScore + " f6: " + featureVec.blScore +
-                    " # " + featureVec.documentID)
+            trainingWriter.write("" + featureVec.relevant + " qid:" + featureVec.queryID + " 1:" + featureVec.lncltnScore + " 2:" + featureVec.bnnbnnScore
+                    + " 3:" + featureVec.ulScore + " 4:" + featureVec.ujmScore + " 5:" + featureVec.udsScore + " # " + featureVec.documentID + "\n")
         }
     }
+    trainingWriter.close()
 }
 
 class unigramDirichletSimilarity(private val invertedIndex: InvertedIndex, private val tokenizedQuery: ArrayList<String>,
