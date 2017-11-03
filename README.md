@@ -100,3 +100,15 @@ To run the evaluations on the default Lucene scoring function, or replace the ``
 
 ```./gradlew run -Parg1="-eval" -Parg2="/aboslute/path/to/train.test200.cbor.article.qrels" -Parg3="/absolute/path/to/cs753luceneDefault.results"```
 
+# a5
+ Learning to Rank
+
+The default main class for this assignment is ```edu.unh.cs.ir.a5.MainKt```
+
+There are three modes you can run our assignment in they are ```-init```, ```-eval```, ```-learnAllRankings```
+
+To generate RankLib files, simply run:
+```./gradlew run -Parg1="-learnAllRankings" -Parg2="/aboslute/path/to/train.test200.cbor.paragraphs" -Parg3="/absolute/path/to/train.test200.cbor.outlines" Parg4="/absolute/path/to/train.test200.cbor.article.qrels"```
+
+RankLib format file will be generated in cs753allqueries.txt file. Takes around 15 min to run.
+
