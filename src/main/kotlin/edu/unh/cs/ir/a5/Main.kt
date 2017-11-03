@@ -54,8 +54,14 @@ fun main(args: Array<String>) {
                 performRankEvaluation(args[1], args[2])
             }
             args[0] == "-learnAllRankings" -> {
-                println("expecting first argument to be query")
+                println("expecting first argument to be the qrels file path...")
+                println("expecting the second argument to be the results file path...")
                 generateResults(args)
+            }
+            args[0] == "-learnSingleQuery" -> {
+                println("expecting first argument to be query")
+                println("expecting second argument to be the qrels file path...")
+                generateResults(args[1], args[2])
             }
             else -> {
                 println("expecting first argument to be paragraph data file path...")
@@ -397,6 +403,185 @@ fun generateResults(luceneDefaultResults: FileWriter, customResults: FileWriter,
 
 }
 
+fun generateResults(query: String, paragraphFile: String) {
+
+    val rankMethods = ArrayList<String>()
+    rankMethods.add("lncltn")
+    rankMethods.add("bnnbnn")
+    rankMethods.add("ancapc")
+    rankMethods.add("ul")
+    rankMethods.add("ujm")
+    rankMethods.add("uds")
+    rankMethods.add("bl")
+
+    // Get paragraphs from the CBOR file
+    var paragraphStream = FileInputStream(paragraphFile)
+
+    // Holds our frequencies in a table representation
+    val invertedIndex = InvertedIndex()
+
+    // Holds bigram info
+    val bigramIndex = BigramIndex()
+
+    // Standard token and stemming rules
+    val analyzer = StandardAnalyzer()
+
+    val featureVectors = HashMap<Int, HashMap<Int, FeatureVector>>()
+
+    // Add the paragraphs to each index
+    rankMethods.forEachIndexed { _, model ->
+        val index = Indexer()
+        println("start index")
+        // Document vectors
+        val documentVectors = ArrayList<ArrayList<Double>>()
+        // Document ID for the current document being indexed
+        var currentIndexDocID = 0
+        DeserializeData.iterableParagraphs(paragraphStream).forEach {
+            var lastToken = ""
+            TokenizerAnalyzer.tokenizeString(analyzer, it.textOnly).forEach { token ->
+                invertedIndex.addToIndex(token, currentIndexDocID)
+                if (lastToken != "")
+                    bigramIndex.addToIndex(currentIndexDocID, token, lastToken)
+                lastToken = token
+            }
+
+            var docType = TFIDF_DOC_TYPE.OTHER
+
+            when (model) {
+                "lncltn" -> {docType = TFIDF_DOC_TYPE.LNC}
+                "bnnbnn" -> {docType = TFIDF_DOC_TYPE.BNN}
+                "ancapc" -> {docType = TFIDF_DOC_TYPE.ANC}
+            }
+
+            documentVectors.add(invertedIndex.generateDocumentVector(docType, currentIndexDocID))
+            index.indexParagraph(it)
+            currentIndexDocID++
+        }
+
+        println()
+        println("Indexing complete.")
+
+
+        // Close after we load the entries
+        index.closeIndex()
+
+        // Create the search engines
+        val directory = index.indexDir
+
+        val maxDocID = currentIndexDocID
+
+        var currentqID = 0
+
+        val tokenizedQuery = tokenizeQuery(query, analyzer)
+
+        var queryType = TFIDF_QUERY_TYPE.LTN
+
+        when (model) {
+            "lncltn" -> {queryType = TFIDF_QUERY_TYPE.LTN}
+            "bnnbnn" -> {queryType = TFIDF_QUERY_TYPE.BNN}
+            "ancapc" -> {queryType = TFIDF_QUERY_TYPE.APC}
+        }
+
+        val queryVector = invertedIndex.generateQueryVector(tokenizedQuery, queryType)
+
+        var sim: SimilarityBase
+        var searchEngine: SearchEngine
+
+        when (model) {
+            "lncltn" -> {sim = lncLtnSimilarity(invertedIndex, documentVectors, queryVector)
+            }
+            "bnnbnn" -> {sim = bnnBnnSimilarity(invertedIndex, documentVectors, queryVector)}
+            "ancapc" -> {sim = ancApcSimilarity(invertedIndex, documentVectors, queryVector)}
+            "ul" -> {sim = unigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectors)}
+            "ujm" -> {sim = unigramJelinekMercerSimilarity(invertedIndex, tokenizedQuery, documentVectors, totalDocs = currentIndexDocID.toDouble())}
+            "uds" -> {sim = unigramDirichletSimilarity(invertedIndex, tokenizedQuery, documentVectors)}
+            "bl" -> {sim = bigramLaplaceSimilarity(invertedIndex, tokenizedQuery, documentVectors, bigramIndex)}
+            else -> {sim = unigramDirichletSimilarity(invertedIndex, tokenizedQuery, documentVectors)}
+        }
+
+        searchEngine = SearchEngine(directory, sim)
+
+        print("Starting search results...")
+        val topScoredDocuments = searchEngine.performQuery(query, 10)
+
+        topScoredDocuments.scoreDocs.forEachIndexed { rank, scoreDoc ->
+            if (scoreDoc.doc <= maxDocID) {
+                val doc = searchEngine.getDoc(scoreDoc.doc)
+                val docId = doc?.get(IndexerFields.ID.toString().toLowerCase())
+                when (model) {
+                    "lncltn" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.lncltnScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "bnnbnn" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.bnnbnnScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "ancapc" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.ancapcScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "ul" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.ulScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "ujm" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.ujmScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "uds" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.udsScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                    "bl" -> {
+                        if (featureVectors[scoreDoc.doc] == null)
+                            featureVectors[scoreDoc.doc] = HashMap<Int, FeatureVector>()
+                        if (featureVectors[scoreDoc.doc]!![currentqID] == null)
+                            featureVectors[scoreDoc.doc]!![currentqID] = FeatureVector()
+                        featureVectors[scoreDoc.doc]!![currentqID]!!.blScore = 1.0/(rank.toDouble() + 1.0)
+                    }
+                }
+                featureVectors[scoreDoc.doc]!![currentqID]!!.documentID = docId!!
+                featureVectors[scoreDoc.doc]!![currentqID]!!.queryID = currentqID
+            }
+        }
+
+
+        // Flush RAM directory
+        directory.close()
+        invertedIndex.clear()
+        bigramIndex.clear()
+
+        // Get paragraphs from the CBOR file
+        paragraphStream = FileInputStream(paragraphFile)
+    }
+
+    featureVectors.forEach { docid, queryList ->
+        queryList.forEach { queryid, featureVec ->
+            println("rel: " + featureVec.relevant + " qid: " + featureVec.queryID + " f0: " + featureVec.lncltnScore + " f1: " + featureVec.bnnbnnScore
+                    + " f2: " + featureVec.ancapcScore + " f3: " + featureVec.ulScore + " f4: " + featureVec.ujmScore + " f5: " + featureVec.udsScore + " f6: " + featureVec.blScore +
+                    " # " + featureVec.documentID)
+        }
+    }
+}
 
 fun generateResults(args: Array<String>) {
 
